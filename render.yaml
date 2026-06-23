@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: minilinks
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: APP_BASE_URL
+        sync: false
+      - key: FREE_ACCESS_EMAILS
+        sync: false
+      - key: STRIPE_PAYMENT_LINK
+        sync: false
+      - key: STRIPE_CUSTOMER_PORTAL_LINK
+        sync: false

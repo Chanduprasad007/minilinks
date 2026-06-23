@@ -24,6 +24,51 @@ const FREE_ACCESS_EMAILS = (process.env.FREE_ACCESS_EMAILS || "")
   .map(email => email.trim().toLowerCase())
   .filter(Boolean);
 
+const RESERVED_PATHS = [
+  "dashboard", "analytics", "campaigns", "settings",
+  "login", "register", "workspace", "auth", "sheets",
+  "api", "guide", "pricing", "billing", "logout", "p"
+];
+
+function parseReferrer(refererHeader?: string): string {
+  if (!refererHeader) return "Direct";
+  try {
+    const url = new URL(refererHeader);
+    const host = url.hostname.toLowerCase();
+    if (host.includes("google.com")) return "Google Search";
+    if (host.includes("bing.com")) return "Bing Search";
+    if (host.includes("yahoo.com")) return "Yahoo Search";
+    if (host.includes("t.co") || host.includes("twitter.com") || host.includes("x.com")) return "X / Twitter";
+    if (host.includes("facebook.com")) return "Facebook";
+    if (host.includes("linkedin.com")) return "LinkedIn";
+    if (host.includes("instagram.com")) return "Instagram";
+    if (host.includes("reddit.com")) return "Reddit";
+    if (host.includes("youtube.com")) return "YouTube";
+    return url.hostname;
+  } catch (_) {
+    return "External Link";
+  }
+}
+
+function parseBrowser(userAgentString?: string): string {
+  if (!userAgentString) return "Other";
+  const ua = userAgentString.toLowerCase();
+  if (ua.includes("chrome") && !ua.includes("chromium") && !ua.includes("edg") && !ua.includes("opr")) return "Chrome";
+  if (ua.includes("safari") && !ua.includes("chrome") && !ua.includes("chromium")) return "Safari";
+  if (ua.includes("firefox")) return "Firefox";
+  if (ua.includes("edg")) return "Edge";
+  if (ua.includes("opr") || ua.includes("opera")) return "Opera";
+  return "Other";
+}
+
+function parseDevice(userAgentString?: string): string {
+  if (!userAgentString) return "Desktop";
+  const ua = userAgentString.toLowerCase();
+  if (ua.includes("ipad") || ua.includes("tablet") || (ua.includes("android") && !ua.includes("mobile"))) return "Tablet";
+  if (ua.includes("mobile") || ua.includes("iphone") || ua.includes("android")) return "Mobile";
+  return "Desktop";
+}
+
 const PLAN_LIMITS = {
   guest: 5,
   free: 25,
@@ -90,14 +135,17 @@ try {
   if (fs.existsSync(configPath)) {
     const configData = fs.readFileSync(configPath, "utf-8");
     const firebaseConfig = JSON.parse(configData);
-    const hasServerCredentials = Boolean(
-      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-      process.env.FIREBASE_CONFIG ||
-      process.env.K_SERVICE
-    );
+    const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    const hasCredentialsFile = Boolean(credentialsPath && fs.existsSync(credentialsPath));
+    const hasRenderOrCloudCredentials = Boolean(process.env.FIREBASE_CONFIG || process.env.K_SERVICE);
+    const hasServerCredentials = hasCredentialsFile || hasRenderOrCloudCredentials;
+
+    if (credentialsPath && !hasCredentialsFile) {
+      console.warn(`Firebase credentials file not found at ${credentialsPath}. Using local JSON fallback.`);
+    }
 
     if (!hasServerCredentials) {
-      console.warn("Firebase config found, but no server credentials are available. Using local JSON fallback.");
+      console.warn("Firebase config found, but no usable server credentials are available. Using local JSON fallback.");
     } else {
     
       // Initialize admin SDK
@@ -320,6 +368,27 @@ async function findFirestoreUrl(id: string): Promise<ShortUrl | null> {
     console.error("Error finding URL by ID in Firestore:", e);
     const list = loadUrlsLocal();
     return list.find(u => u.id.toLowerCase() === id.toLowerCase()) || null;
+  }
+  return null;
+}
+
+async function findFirestoreUrlWithDomain(id: string, domain: string): Promise<ShortUrl | null> {
+  if (!db) {
+    const list = loadUrlsLocal();
+    return list.find(u => u.id.toLowerCase() === id.toLowerCase() && u.customDomain?.toLowerCase() === domain.toLowerCase()) || null;
+  }
+  try {
+    const snap = await db.collection("urls")
+      .where("id", "==", id)
+      .where("customDomain", "==", domain)
+      .get();
+    if (!snap.empty) {
+      return snap.docs[0].data() as ShortUrl;
+    }
+  } catch (e) {
+    console.error("Error finding URL by ID and domain in Firestore:", e);
+    const list = loadUrlsLocal();
+    return list.find(u => u.id.toLowerCase() === id.toLowerCase() && u.customDomain?.toLowerCase() === domain.toLowerCase()) || null;
   }
   return null;
 }
@@ -656,7 +725,13 @@ app.get("/api/urls", async (req, res) => {
 
 // API: Shorten URL
 app.post("/api/shorten", async (req, res) => {
-  const { targetUrl, customAlias, userId } = req.body as ShortenRequest;
+  const { targetUrl, customAlias, userId, expiresAt, password, tags, campaign, customDomain } = req.body as ShortenRequest & {
+    expiresAt?: string;
+    password?: string;
+    tags?: string[];
+    campaign?: string;
+    customDomain?: string;
+  };
   
   if (!targetUrl) {
     return res.status(400).json({ error: "Original URL is required" });
@@ -746,7 +821,13 @@ app.post("/api/shorten", async (req, res) => {
       clicks: 0,
       createdAt: new Date().toISOString(),
       userId: activeUserId,
-      customAlias: !!customAlias
+      customAlias: !!customAlias,
+      expiresAt: expiresAt || undefined,
+      password: password || undefined,
+      tags: tags || [],
+      campaign: campaign || undefined,
+      customDomain: customDomain || undefined,
+      clicksHistory: []
     };
 
     await saveFirestoreUrl(newUrl);
@@ -779,25 +860,175 @@ app.delete("/api/urls/:id", async (req, res) => {
   }
 });
 
+// API: Verify password for protected link
+app.post("/api/urls/verify-password", async (req, res) => {
+  const { id, password } = req.body;
+  if (!id) {
+    return res.status(400).json({ error: "Link ID is required" });
+  }
+  try {
+    const match = await findFirestoreUrl(id);
+    if (!match) {
+      return res.status(404).json({ error: "Short link not found" });
+    }
+    if (match.password && match.password === password) {
+      return res.json({ success: true, targetUrl: match.targetUrl });
+    }
+    return res.status(401).json({ success: false, error: "Incorrect password" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to verify password" });
+  }
+});
+
+// API: Update shortURL parameters (editing destination URL, settings, password, expiration, etc.)
+app.patch("/api/urls/:id", async (req, res) => {
+  const id = req.params.id;
+  const { userId, targetUrl, expiresAt, password, tags, campaign, customDomain } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: "userId is strictly required" });
+  }
+
+  try {
+    const match = await findFirestoreUrl(id);
+    if (!match || match.userId !== userId) {
+      return res.status(404).json({ error: "Shortened link not found or unauthorized to edit" });
+    }
+
+    if (targetUrl) {
+      let formattedUrl = targetUrl.trim();
+      if (!/^https?:\/\//i.test(formattedUrl)) {
+        formattedUrl = "https://" + formattedUrl;
+      }
+      try {
+        new URL(formattedUrl);
+        match.targetUrl = formattedUrl;
+        // Refresh title if destination changed
+        const title = await fetchPageTitle(formattedUrl).catch(() => undefined);
+        if (title) {
+          match.title = title;
+        }
+      } catch (_) {
+        return res.status(400).json({ error: "Please enter a valid active URL structure" });
+      }
+    }
+
+    if (expiresAt !== undefined) {
+      match.expiresAt = expiresAt || undefined;
+    }
+    if (password !== undefined) {
+      match.password = password || undefined;
+    }
+    if (tags !== undefined) {
+      match.tags = tags || [];
+    }
+    if (campaign !== undefined) {
+      match.campaign = campaign || undefined;
+    }
+    if (customDomain !== undefined) {
+      match.customDomain = customDomain || undefined;
+    }
+
+    await saveFirestoreUrl(match);
+    res.json(match);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update URL" });
+  }
+});
+
+// ROOT GATEWAY: Handle custom domain root visits
+app.get("/", async (req, res, next) => {
+  const hostname = req.hostname.toLowerCase();
+  const defaultDomains = ["localhost", "127.0.0.1", "minilinks.onrender.com"];
+  const appBaseDomain = APP_BASE_URL.replace(/^https?:\/\//i, "").split(":")[0].toLowerCase();
+  
+  const isCustomDomain = !defaultDomains.includes(hostname) && hostname !== appBaseDomain;
+  if (isCustomDomain) {
+    // Redirect custom domain root to the main SaaS landing page
+    return res.redirect(302, APP_BASE_URL);
+  }
+  next();
+});
+
 // REDIRECTS GATEWAY: Handle shortened paths
 app.get("/:shortId", async (req, res, next) => {
   const shortId = req.params.shortId;
 
-  // Let assets, index.html, and routing pass to Vite
+  // Let assets, index.html, routing, and reserved SPA routes pass to Vite
   if (
     shortId.startsWith("api") || 
     shortId.includes(".") || 
-    shortId === "index.html"
+    shortId === "index.html" ||
+    RESERVED_PATHS.includes(shortId.toLowerCase())
   ) {
     return next();
   }
 
   try {
-    const match = await findFirestoreUrl(shortId);
+    const hostname = req.hostname.toLowerCase();
+    const defaultDomains = ["localhost", "127.0.0.1", "minilinks.onrender.com"];
+    const appBaseDomain = APP_BASE_URL.replace(/^https?:\/\//i, "").split(":")[0].toLowerCase();
+    
+    const isCustomDomain = !defaultDomains.includes(hostname) && hostname !== appBaseDomain;
+    
+    let match: ShortUrl | null = null;
+    if (isCustomDomain) {
+      match = await findFirestoreUrlWithDomain(shortId, hostname);
+    } else {
+      match = await findFirestoreUrl(shortId);
+    }
 
     if (match) {
-      // Increment count synchronously & save
+      // 1. Check Expiration
+      if (match.expiresAt && new Date() > new Date(match.expiresAt)) {
+        return res.redirect(302, `${APP_BASE_URL}/?error=expired&id=${encodeURIComponent(shortId)}`);
+      }
+
+      // 2. Check Password Protection
+      if (match.password) {
+        // Redirect to client-side password verification route
+        return res.redirect(302, `${APP_BASE_URL}/p/${match.id}`);
+      }
+
+      // 3. Record click and increment clicks count
       match.clicks = (match.clicks || 0) + 1;
+
+      // Extract User Agent metrics
+      const userAgent = req.headers["user-agent"] || "";
+      const referer = req.headers["referer"];
+      
+      const clickBrowser = parseBrowser(userAgent);
+      const clickDevice = parseDevice(userAgent);
+      const clickReferrer = parseReferrer(referer);
+      
+      // Geographic country lookup: check hosting provider headers, fallback to mock/US
+      let clickCountry = (req.headers["cf-ipcountry"] || req.headers["x-appengine-country"] || "US") as string;
+      if (clickCountry === "XX" || clickCountry === "Unknown") {
+        clickCountry = "US";
+      }
+
+      // Generate a mock country list for local development metrics diversity
+      if (process.env.NODE_ENV !== "production" && (!req.headers["cf-ipcountry"] && !req.headers["x-appengine-country"])) {
+        const mockCountries = ["US", "GB", "DE", "IN", "CA", "FR", "AU", "JP"];
+        clickCountry = mockCountries[Math.floor(Math.random() * mockCountries.length)];
+      }
+
+      const clickRecord = {
+        timestamp: new Date().toISOString(),
+        referrer: clickReferrer,
+        browser: clickBrowser,
+        device: clickDevice,
+        country: clickCountry
+      };
+
+      match.clicksHistory = match.clicksHistory || [];
+      match.clicksHistory.push(clickRecord);
+
+      // Bound click history length to avoid database document size exhaustion
+      if (match.clicksHistory.length > 1000) {
+        match.clicksHistory.shift();
+      }
+
       await saveFirestoreUrl(match);
       return res.redirect(302, match.targetUrl);
     }
@@ -806,7 +1037,7 @@ app.get("/:shortId", async (req, res, next) => {
   }
 
   // Not found, redirect back to home page with state
-  return res.redirect(`/?error=not-found&id=${encodeURIComponent(shortId)}`);
+  return res.redirect(302, `${APP_BASE_URL}/?error=not-found&id=${encodeURIComponent(shortId)}`);
 });
 
 
