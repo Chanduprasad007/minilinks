@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Firestore is accessed through the trusted Express API only.
+    // Do not allow browser clients to read user billing data or mutate redirects.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
