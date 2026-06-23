@@ -6,18 +6,38 @@ export interface ShortUrl {
   createdAt: string;    // ISO date string of creation
   userId: string;       // User token ID (for history filtering)
   customAlias?: boolean;// Label indicating if custom alias was used
+  expiresAt?: string;   // Optional expiration date
+  password?: string;    // Optional password layer
+  tags?: string[];      // Optional categorization tags
+  campaign?: string;    // Optional campaign name
+  customDomain?: string;// Branded custom domain if configured
+  clicksHistory?: {
+    timestamp: string;
+    referrer: string;
+    browser: string;
+    device: string;
+    country: string;
+  }[];
 }
 
 export interface ShortenRequest {
   targetUrl: string;
   customAlias?: string;
   userId: string;
+  expiresAt?: string;
+  password?: string;
+  tags?: string[];
+  campaign?: string;
+  customDomain?: string;
 }
 
 export interface AnalyticsRecord {
   timestamp: string;
   referrer: string;
   userAgent: string;
+  browser?: string;
+  device?: string;
+  country?: string;
 }
 
 export interface UserAccount {
@@ -31,6 +51,7 @@ export interface UserAccount {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   freeAccess?: boolean;
+  customDomains?: string[];
 }
 
 export interface AuthResponse {
