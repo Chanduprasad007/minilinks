@@ -1,6 +1,6 @@
 {
-  "name": "URL Shortener",
-  "description": "A elegant full-stack URL shortener with click-tracking, link manager, QR code generator, and custom alias support.",
+  "name": "Minilinks",
+  "description": "A clean Minilinks URL shortener with accounts, subscriptions, analytics, and QR codes.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -13,7 +13,7 @@
       {
         "source": "**",
         "run": {
-          "serviceId": "shortly",
+          "serviceId": "minilinks",
           "region": "us-central1"
         }
       }

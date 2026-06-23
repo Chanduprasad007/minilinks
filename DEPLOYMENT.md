@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Short.ly is a unified Node app:
+Minilinks is a unified Node app:
 
 - React/Vite frontend
 - Express API and redirect gateway
@@ -31,7 +31,7 @@ For Firestore in production, attach a Google service account to the server runti
 
 The included `firebase.json` routes all non-static traffic to:
 
-- service: `shortly`
+- service: `minilinks`
 - region: `us-central1`
 
 Deploy flow:
@@ -40,7 +40,7 @@ Deploy flow:
 npm install
 npm run build
 firebase deploy --only firestore:rules
-gcloud run deploy shortly --source . --region us-central1 --allow-unauthenticated
+gcloud run deploy minilinks --source . --region us-central1 --allow-unauthenticated
 firebase deploy --only hosting
 ```
 

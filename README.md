@@ -1,6 +1,6 @@
-# Short.ly URL Shortener
+# Minilinks
 
-Full-stack URL shortener built with React, Vite, Express, Firebase Auth, and Firestore.
+Full-stack link shortener built with React, Vite, Express, Firebase Auth, and Firestore.
 
 ## What is included
 
@@ -89,7 +89,7 @@ Recommended path:
 1. Push this project to GitHub.
 2. Deploy the Express server to Cloud Run, Render, Railway, or another Node host.
 3. Configure env vars from `.env.example`.
-4. For Firebase Hosting + Cloud Run, deploy with `firebase.json`; it rewrites traffic to a Cloud Run service named `shortly` in `us-central1`.
+4. For Firebase Hosting + Cloud Run, deploy with `firebase.json`; it rewrites traffic to a Cloud Run service named `minilinks` in `us-central1`.
 5. Attach a Firebase/Google service account so Firestore Admin access works in production.
 
 Useful commands:
