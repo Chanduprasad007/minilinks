@@ -49,7 +49,10 @@ import {
 
 
 // Local storage helpers
-const USER_ID_KEY = "shortener_user_tracker_id";
+const USER_ID_KEY = "minilinks_user_tracker_id";
+const PUBLIC_SHORT_DOMAIN = "minilinks.onrender.com";
+const publicShortUrl = (id: string) => `https://${PUBLIC_SHORT_DOMAIN}/${id}`;
+const displayShortUrl = (id: string) => `${PUBLIC_SHORT_DOMAIN}/${id}`;
 type PublicUser = Pick<UserAccount, "userId" | "email" | "apiTokens" | "subscriptionStatus" | "plan" | "freeAccess">;
 
 function getOrCreateUserId(): string {
@@ -63,12 +66,12 @@ function getOrCreateUserId(): string {
 
 export default function App() {
   const [user, setUser] = useState<PublicUser | null>(() => {
-    const saved = localStorage.getItem("shortly_authenticated_user");
+    const saved = localStorage.getItem("minilinks_authenticated_user");
     return saved ? { apiTokens: [], ...JSON.parse(saved) } : null;
   });
   
   const [userId, setUserId] = useState<string>(() => {
-    const saved = localStorage.getItem("shortly_authenticated_user");
+    const saved = localStorage.getItem("minilinks_authenticated_user");
     if (saved) {
       return JSON.parse(saved).userId;
     }
@@ -182,7 +185,7 @@ export default function App() {
         freeAccess: data.freeAccess
       };
       setUser(updatedUser);
-      localStorage.setItem("shortly_authenticated_user", JSON.stringify(updatedUser));
+      localStorage.setItem("minilinks_authenticated_user", JSON.stringify(updatedUser));
     } catch (err) {
       console.error("Failed to fetch billing status", err);
     }
@@ -321,7 +324,7 @@ export default function App() {
       // Set user state
       const authenticatedUser = data.user;
       setUser(authenticatedUser);
-      localStorage.setItem("shortly_authenticated_user", JSON.stringify(authenticatedUser));
+      localStorage.setItem("minilinks_authenticated_user", JSON.stringify(authenticatedUser));
       setUserId(authenticatedUser.userId);
       
       setToastMessage({
@@ -380,7 +383,7 @@ export default function App() {
 
       const authenticatedUser = data.user;
       setUser(authenticatedUser);
-      localStorage.setItem("shortly_authenticated_user", JSON.stringify(authenticatedUser));
+      localStorage.setItem("minilinks_authenticated_user", JSON.stringify(authenticatedUser));
       setUserId(authenticatedUser.userId);
 
       setToastMessage({
@@ -405,7 +408,7 @@ export default function App() {
       console.error("Firebase SignOut triggered an error:", e);
     }
     setUser(null);
-    localStorage.removeItem("shortly_authenticated_user");
+    localStorage.removeItem("minilinks_authenticated_user");
     // Re-verify/fallback to local guest ID
     const guestId = getOrCreateUserId();
     setUserId(guestId);
@@ -413,7 +416,7 @@ export default function App() {
     setActiveTab("workspace");
   };
 
-  // Auth: Generate Developer API Token
+  // Auth: Generate API Token
   const handleGenerateDevApiToken = async () => {
     if (!user) return;
     try {
@@ -430,7 +433,7 @@ export default function App() {
 
       const updatedUser = { ...user, apiTokens: data.apiTokens };
       setUser(updatedUser);
-      localStorage.setItem("shortly_authenticated_user", JSON.stringify(updatedUser));
+      localStorage.setItem("minilinks_authenticated_user", JSON.stringify(updatedUser));
       setToastMessage({ text: "Generated new Developer API Token successfully!", type: "info" });
       fetchBillingStatus();
     } catch (err: any) {
@@ -455,7 +458,7 @@ export default function App() {
 
       const updatedUser = { ...user, apiTokens: data.apiTokens };
       setUser(updatedUser);
-      localStorage.setItem("shortly_authenticated_user", JSON.stringify(updatedUser));
+      localStorage.setItem("minilinks_authenticated_user", JSON.stringify(updatedUser));
       setToastMessage({ text: "Revoked Developer API Token successfully", type: "info" });
     } catch (err: any) {
       setToastMessage({ text: err.message || "Could not revoke API token", type: "error" });
@@ -492,7 +495,7 @@ export default function App() {
         if (response.ok && result.id) {
           processed.push({
             original: url,
-            short: `short.ly/${result.id}`,
+            short: displayShortUrl(result.id),
             testLink: `/${result.id}`
           });
         } else {
@@ -538,7 +541,7 @@ export default function App() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "shortly_bulk_processed.csv");
+    link.setAttribute("download", "minilinks_bulk_processed.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -575,14 +578,14 @@ export default function App() {
   };
 
   const handleCopyNewLink = (id: string) => {
-    const fullLink = `https://short.ly/${id}`;
+    const fullLink = publicShortUrl(id);
     navigator.clipboard.writeText(fullLink);
     setCopiedSuccess(true);
     setTimeout(() => setCopiedSuccess(false), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] flex flex-col font-sans">
+    <div className="min-h-screen spatial-bg text-[#1E293B] flex flex-col font-sans">
       {/* Dynamic Toast Alert Banner */}
       <AnimatePresence>
         {toastMessage && (
@@ -590,12 +593,12 @@ export default function App() {
             initial={{ opacity: 0, y: -40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -40 }}
-            className="fixed top-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 max-w-md w-full bg-slate-900 shadow-xl rounded-2xl p-4 text-white border border-slate-800 flex items-start gap-3"
+            className="fixed top-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 max-w-md w-full bg-slate-900 shadow-sm rounded-lg p-4 text-white border border-slate-800 flex items-start gap-3"
           >
             <AlertCircle className={`w-5 h-5 shrink-0 ${toastMessage.type === "error" ? "text-rose-400" : "text-amber-400"}`} />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                {toastMessage.type === "error" ? "System Notification" : "SaaS Tracker Action"}
+                {toastMessage.type === "error" ? "System Notification" : "Minilinks"}
               </p>
               <p className="text-sm mt-0.5 leading-relaxed text-neutral-200">{toastMessage.text}</p>
             </div>
@@ -611,18 +614,18 @@ export default function App() {
       </AnimatePresence>
 
       {/* Main Structural Navbar Header Section */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-40 shadow-xs">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur sticky top-0 z-40 shadow-xs">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-mono font-bold text-base shadow-xs">
-              S
+            <div className="w-8 h-8 bg-slate-950 rounded-lg flex items-center justify-center text-white font-mono font-bold text-base shadow-xs">
+              M
             </div>
             <div>
               <h1 className="font-display font-bold text-lg text-slate-900 tracking-tight leading-none">
-                Short.ly
+                Minilinks
               </h1>
               <span className="text-[10px] font-medium text-slate-400 tracking-wider font-mono">
-                ENTERPRISE SaaS PLATFORM
+                Link management
               </span>
             </div>
           </div>
@@ -653,73 +656,73 @@ export default function App() {
                   setShowAuthForm(true);
                   setAuthError(null);
                 }}
-                className="px-4.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-4.5 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                 id="header-login-btn"
               >
                 <LogIn className="w-3.8 h-3.8" />
-                <span>Account Login</span>
+                <span>Sign in</span>
               </button>
             )}
           </div>
         </div>
 
         {/* Tab Controls Navigation bar */}
-        <div className="bg-slate-50 border-t border-slate-200">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 flex overflow-x-auto gap-1 py-1 text-sm scrollbar-none">
+        <div className="bg-white/60 border-t border-slate-200/80">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 flex overflow-x-auto gap-1 py-1 text-sm scrollbar-none">
             <button
               onClick={() => setActiveTab("workspace")}
               className={`px-4 py-2.5 font-semibold text-xs rounded-md transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer border-b-2 py-2 mt-0.2 ${
                 activeTab === "workspace"
-                  ? "border-indigo-600 text-indigo-600 font-bold bg-white shadow-3xs"
+                  ? "border-slate-900 text-slate-900 font-bold bg-white shadow-3xs"
                   : "border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
               <Link2 className="w-3.5 h-3.5" />
-              <span>Link Workspace</span>
+              <span>Links</span>
             </button>
             <button
               onClick={() => setActiveTab("api")}
               className={`px-4 py-2.5 font-semibold text-xs rounded-md transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer border-b-2 py-2 mt-0.2 ${
                 activeTab === "api"
-                  ? "border-indigo-600 text-indigo-600 font-bold bg-white shadow-3xs"
+                  ? "border-slate-900 text-slate-900 font-bold bg-white shadow-3xs"
                   : "border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
               <Key className="w-3.5 h-3.5" />
-              <span>Developer API</span>
+              <span>API</span>
             </button>
             <button
               onClick={() => setActiveTab("sheets")}
               className={`px-4 py-2.5 font-semibold text-xs rounded-md transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer border-b-2 py-2 mt-0.2 ${
                 activeTab === "sheets"
-                  ? "border-indigo-600 text-indigo-600 font-bold bg-white shadow-3xs"
+                  ? "border-slate-900 text-slate-900 font-bold bg-white shadow-3xs"
                   : "border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Sheet & CSV Sync</span>
+              <span>Bulk tools</span>
             </button>
             <button
               onClick={() => setActiveTab("account")}
               className={`px-4 py-2.5 font-semibold text-xs rounded-md transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer border-b-2 py-2 mt-0.2 ${
                 activeTab === "account"
-                  ? "border-indigo-600 text-indigo-600 font-bold bg-white shadow-3xs"
+                  ? "border-slate-900 text-slate-900 font-bold bg-white shadow-3xs"
                   : "border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
               <DollarSign className="w-3.5 h-3.5" />
-              <span>Account & Billing</span>
+              <span>Billing</span>
             </button>
             <button
               onClick={() => setActiveTab("guide")}
               className={`px-4 py-2.5 font-semibold text-xs rounded-md transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer border-b-2 py-2 mt-0.2 ${
                 activeTab === "guide"
-                  ? "border-indigo-600 text-indigo-600 font-bold bg-white shadow-3xs"
+                  ? "border-slate-900 text-slate-900 font-bold bg-white shadow-3xs"
                   : "border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Ship & Monetize Guide</span>
+              <span>Deploy</span>
             </button>
           </div>
         </div>
@@ -728,11 +731,11 @@ export default function App() {
       {/* Guest Mode alert helper */}
       {!user && activeTab === "workspace" && (
         <div className="bg-amber-50/75 border-b border-amber-100 py-2.5">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
             <div className="flex items-center gap-2 text-amber-800">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse relative inline-block shrink-0" />
               <p className="font-medium">
-                You are utilizing a <strong>Guest Session</strong>. Create a cloud account to generate API tokens, save links permanently, and unlock Sheets sync.
+                You are using a <strong>guest session</strong>. Sign in to save links, use API keys, and unlock bulk tools.
               </p>
             </div>
             <button
@@ -743,7 +746,7 @@ export default function App() {
               }}
               className="text-[10px] font-bold text-amber-900 hover:text-white bg-amber-200/80 hover:bg-amber-600 border border-amber-300 rounded px-2.5 py-1 transition-all cursor-pointer"
             >
-              Unlock Features
+              Create account
             </button>
           </div>
         </div>
@@ -761,8 +764,8 @@ export default function App() {
             <div className="max-w-md mx-auto px-6 py-8">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold flex items-center gap-2 font-display">
-                  {isRegisterMode ? <UserPlus className="w-5 h-5 text-indigo-400" /> : <Lock className="w-5 h-5 text-indigo-400" />}
-                  <span>{isRegisterMode ? "Create an Account" : "Welcome Back"}</span>
+                  {isRegisterMode ? <UserPlus className="w-5 h-5 text-slate-300" /> : <Lock className="w-5 h-5 text-slate-300" />}
+                  <span>{isRegisterMode ? "Create account" : "Welcome back"}</span>
                 </h3>
                 <button
                   onClick={() => setShowAuthForm(false)}
@@ -812,12 +815,12 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={isAuthLoading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full bg-indigo-600 hover:bg-slate-1000 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   {isAuthLoading ? (
                     <RotateCw className="w-4 h-4 animate-spin" />
                   ) : (
-                    <span>{isRegisterMode ? "Register Account" : "Access Console"}</span>
+                    <span>{isRegisterMode ? "Create account" : "Sign in"}</span>
                   )}
                 </button>
               </form>
@@ -828,7 +831,7 @@ export default function App() {
                   <div className="w-full border-t border-slate-800"></div>
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-slate-900 px-2.5 text-slate-400 font-mono tracking-widest text-[9px]">SaaS SSO Access</span>
+                  <span className="bg-slate-900 px-2.5 text-slate-400 font-mono tracking-widest text-[9px]">Google sign in</span>
                 </div>
               </div>
 
@@ -836,7 +839,7 @@ export default function App() {
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={isAuthLoading}
-                className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-2 rounded-lg text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01]"
+                className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-2 rounded-lg text-sm shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01]"
               >
                 <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -850,9 +853,9 @@ export default function App() {
               <div className="mt-4 pt-4 border-t border-slate-800 text-center">
                 <button
                   onClick={() => setIsRegisterMode(!isRegisterMode)}
-                  className="text-xs text-indigo-400 hover:underline cursor-pointer"
+                  className="text-xs text-slate-300 hover:underline cursor-pointer"
                 >
-                  {isRegisterMode ? "Already verified? Log in here" : "Need to secure your workspace? Sign up now"}
+                  {isRegisterMode ? "Already have an account? Sign in" : "Need an account? Sign up"}
                 </button>
               </div>
             </div>
@@ -867,17 +870,16 @@ export default function App() {
         {activeTab === "workspace" && (
           <>
             {/* Core Shortening Action Hub Card */}
-            <section className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-xs relative overflow-hidden">
+            <section className="spatial-panel rounded-lg p-6 md:p-8 relative overflow-hidden">
               {/* Subtle top brand accent line */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-500" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-slate-900" />
               
               <div className="mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold font-display text-gray-900 tracking-tight">
-                  Shorten & Simplify Your Links
+                  Shorten links
                 </h2>
                 <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
-                  Transform awkward, long destination URLs into polished short links. 
-                  Our fast redirection engine registers real-time clicks and fetches webpage info.
+                  Create clean links, track clicks, and manage everything from one workspace.
                 </p>
               </div>
 
@@ -885,7 +887,7 @@ export default function App() {
                 {/* Long target URL Input Area */}
                 <div>
                   <label htmlFor="target-url" className="text-xs font-bold uppercase tracking-wider text-neutral-500 block mb-1.5">
-                    Paste long target URL
+                    Destination URL
                   </label>
                   <div className="flex flex-col sm:flex-row items-stretch gap-2.5">
                     <div className="relative flex-1">
@@ -899,14 +901,14 @@ export default function App() {
                         placeholder="example.com/some/complex-deep/link-or-tracking-parameters"
                         value={targetUrl}
                         onChange={(e) => setTargetUrl(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 bg-[#fcfdfe] hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-hidden text-slate-800 rounded-xl font-medium text-sm transition-all shadow-2xs"
+                        className="w-full pl-11 pr-4 py-3.5 bg-[#fcfdfe] hover:bg-white focus:bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-hidden text-slate-800 rounded-lg font-medium text-sm transition-all shadow-2xs"
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={isSubmitLoading || !targetUrl.trim()}
-                      className="py-3.5 px-6 bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-400 text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border-t border-white/5 shadow-md"
+                      className="py-3.5 px-6 bg-slate-950 hover:bg-slate-800 focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-400 text-white font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer border-t border-white/5 shadow-sm"
                       id="shorten-submit-btn"
                     >
                       {isSubmitLoading ? (
@@ -932,7 +934,7 @@ export default function App() {
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 select-none cursor-pointer transition-colors"
                     id="toggle-alias-btn"
                   >
-                    <span>Custom Alias (Optional)</span>
+                    <span>Custom alias</span>
                     {showAliasInput ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
 
@@ -945,11 +947,11 @@ export default function App() {
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                       >
-                        <div className="bg-neutral-50/70 border border-neutral-150 p-4 rounded-xl flex flex-col md:flex-row gap-3 items-stretch md:items-end">
+                        <div className="bg-neutral-50/70 border border-neutral-150 p-4 rounded-lg flex flex-col md:flex-row gap-3 items-stretch md:items-end">
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-1">
                               <label htmlFor="custom-alias" className="text-[10px] uppercase font-bold tracking-wider text-gray-500 block">
-                                Preferred Short Name
+                                Alias
                               </label>
                               <span className="text-[9px] text-gray-400 font-mono">No spaces allowed</span>
                             </div>
@@ -965,15 +967,15 @@ export default function App() {
                                 value={customAlias}
                                 onChange={(e) => setCustomAlias(e.target.value.replace(/[^a-zA-Z0-9_\-]/g, ""))}
                                 disabled={!hasProAccess}
-                                className="flex-1 px-3 py-3.5 bg-white border-y border-r border-slate-200 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-hidden text-sm font-semibold rounded-r-lg text-slate-800 transition-colors"
+                                className="flex-1 px-3 py-3.5 bg-white border-y border-r border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-hidden text-sm font-semibold rounded-r-lg text-slate-800 transition-colors"
                               />
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 p-1.5 text-xs text-slate-400">
-                            <Info className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <Info className="w-4 h-4 text-slate-700 shrink-0" />
                             <p className="leading-snug">
-                              {hasProAccess ? "Use letters, numbers, dashes. Ideal for memorable campaigns." : "Upgrade or add your email to the free-access list to use aliases."}
+                              {hasProAccess ? "Use letters, numbers, dashes, or underscores." : "Upgrade or add your email to the free-access list to use aliases."}
                             </p>
                           </div>
                         </div>
@@ -987,7 +989,7 @@ export default function App() {
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-800 text-sm flex items-center gap-2.5 shadow-2xs"
+                    className="p-3.5 bg-rose-50 border border-rose-100 rounded-lg text-rose-800 text-sm flex items-center gap-2.5 shadow-2xs"
                   >
                     <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
                     <span className="font-medium">{errorText}</span>
@@ -1002,35 +1004,35 @@ export default function App() {
                     initial={{ opacity: 0, scale: 0.98, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                    className="mt-6 border border-emerald-150 bg-emerald-50/15 p-5 rounded-xl block relative"
+                    className="mt-6 border border-emerald-150 bg-emerald-50/15 p-5 rounded-lg block relative"
                   >
                     <span className="absolute top-4 right-4 bg-emerald-100/80 text-emerald-800 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1 border border-emerald-200">
-                      <Sparkles className="w-3 h-3" /> Successfully Shortened!
+                      <Sparkles className="w-3 h-3" /> Created
                     </span>
 
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">
-                      Your New Link:
+                      New link
                     </h3>
                     
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                      <div className="flex-1 bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between shadow-2xs gap-3">
+                      <div className="flex-1 bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between shadow-2xs gap-3">
                         <div className="flex flex-col min-w-0">
                           <span className="font-mono text-base font-bold text-slate-900 select-all overflow-hidden text-ellipsis whitespace-nowrap">
-                            short.ly/{newlyCreatedUrl.id}
+                            {displayShortUrl(newlyCreatedUrl.id)}
                           </span>
                           <a
-                            href={`${window.location.protocol}//${window.location.host}/${newlyCreatedUrl.id}`}
+                            href={publicShortUrl(newlyCreatedUrl.id)}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[10px] text-indigo-600 hover:underline font-semibold mt-1 self-start inline-flex items-center gap-0.5"
+                            className="text-[10px] text-slate-900 hover:underline font-semibold mt-1 self-start inline-flex items-center gap-0.5"
                           >
-                            Test Preview Redirection ↗
+                            Test link
                           </a>
                         </div>
                         
                         <button
                           onClick={() => handleCopyNewLink(newlyCreatedUrl.id)}
-                          className="flex items-center justify-center h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shrink-0 cursor-pointer gap-1.5"
+                          className="flex items-center justify-center h-10 px-4 rounded-lg bg-slate-950 hover:bg-slate-800 text-white font-semibold text-xs transition-colors shrink-0 cursor-pointer gap-1.5"
                           id="copy-new-link-btn"
                         >
                           {copiedSuccess ? (
@@ -1049,10 +1051,10 @@ export default function App() {
 
                       <button
                         onClick={() => handleShowQR(
-                          `https://short.ly/${newlyCreatedUrl.id}`,
+                          publicShortUrl(newlyCreatedUrl.id),
                           newlyCreatedUrl.title || newlyCreatedUrl.targetUrl
                         )}
-                        className="py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-950 font-bold text-xs rounded-xl transition-colors shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
+                        className="py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-950 font-bold text-xs rounded-lg transition-colors shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
                         id="show-qr-new-link-btn"
                       >
                         <Compass className="w-4 h-4" />
@@ -1070,14 +1072,14 @@ export default function App() {
             </section>
 
             {/* History / link list panel */}
-            <section className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-xs">
+            <section className="spatial-panel rounded-lg p-6 md:p-8">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 flex-wrap gap-3">
                 <div>
                   <h3 className="text-lg font-bold font-display text-slate-900 tracking-tight flex items-center gap-2">
-                    Your Link Workspace
+                    Your links
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Manage and monitor analytics counts of links created.
+                    Manage links and click counts.
                   </p>
                 </div>
 
@@ -1101,7 +1103,7 @@ export default function App() {
                   /* Loading Skeletons */
                   <div className="space-y-3 py-4">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-24 bg-slate-50 rounded-xl border border-slate-100 animate-pulse flex items-center justify-between px-6">
+                      <div key={i} className="h-24 bg-slate-50 rounded-lg border border-slate-100 animate-pulse flex items-center justify-between px-6">
                         <div className="space-y-2 flex-1">
                           <div className="h-4 bg-slate-200 rounded-sm w-1/3" />
                           <div className="h-3 bg-slate-200 rounded-sm w-2/3" />
@@ -1116,14 +1118,14 @@ export default function App() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="py-12 px-6 text-center border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center max-w-md mx-auto"
+                    className="py-12 px-6 text-center border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center max-w-md mx-auto"
                   >
                     <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 mb-4 border border-slate-100">
                       <Plus className="w-6 h-6" />
                     </div>
-                    <h4 className="font-semibold text-slate-900">No active links found</h4>
+                    <h4 className="font-semibold text-slate-900">No links yet</h4>
                     <p className="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
-                      Enter a target destination address above to create your first shortened link with tracking stats.
+                      Create your first short link above.
                     </p>
                   </motion.div>
                 ) : (
@@ -1147,18 +1149,18 @@ export default function App() {
         {/* TAB 2: DEVELOPER API HUB */}
         {activeTab === "api" && (
           <div className="space-y-6">
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-xs">
+            <section className="spatial-panel rounded-lg p-6 md:p-8">
               <div className="border-b border-slate-100 pb-5 mb-5">
-                <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold tracking-widest uppercase rounded-full">Developer Center</span>
-                <h2 className="text-xl font-bold font-display text-slate-900 mt-2">API Token Management</h2>
+                <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-bold tracking-widest uppercase rounded-full">API</span>
+                <h2 className="text-xl font-bold font-display text-slate-900 mt-2">API tokens</h2>
                 <p className="text-sm text-slate-500 mt-1">
-                  Authorize direct curl commands or external systems (like Zapier, Google Sheets, or GitHub Actions) to generate branded Short.ly links.
+                  Create API tokens for scripts, automations, and external tools.
                 </p>
               </div>
 
               {!user ? (
-                <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 max-w-md mx-auto">
-                  <Key className="w-10 h-10 text-indigo-500 mx-auto mb-3" />
+                <div className="p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200 max-w-md mx-auto">
+                  <Key className="w-10 h-10 text-slate-700 mx-auto mb-3" />
                   <h4 className="font-bold text-slate-900">API Access Locked</h4>
                   <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                     Account authentication is required to generate API tokens. Sign up or log in to secure your API access rules.
@@ -1168,7 +1170,7 @@ export default function App() {
                       setShowAuthForm(true);
                       setAuthError(null);
                     }}
-                    className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer"
+                    className="mt-4 px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer"
                   >
                     Sign In or Create Account
                   </button>
@@ -1181,7 +1183,7 @@ export default function App() {
                       <button
                         onClick={handleGenerateDevApiToken}
                         disabled={user.apiTokens.length >= 5 || !hasProAccess}
-                        className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-1 border-t border-white/5 active:scale-98"
+                        className="px-3.5 py-1.5 bg-slate-950 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-1 border-t border-white/5 active:scale-98"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Generate Key</span>
@@ -1208,16 +1210,16 @@ export default function App() {
                     ) : (
                       <div className="space-y-2.5">
                         {user.apiTokens.map((tok, idx) => (
-                          <div key={idx} className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-3.5 justify-between gap-4 shadow-3xs">
+                          <div key={idx} className="flex items-center bg-slate-50 border border-slate-200 rounded-lg p-3.5 justify-between gap-4 shadow-3xs">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-mono text-xs font-bold shrink-0">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-900 font-mono text-xs font-bold shrink-0">
                                 #{idx + 1}
                               </div>
                               <div className="min-w-0">
                                 <p className="font-mono text-xs font-bold text-slate-800 select-all overflow-hidden text-ellipsis whitespace-nowrap">
                                   {tok}
                                 </p>
-                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Developer Server credential</p>
+                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">Server credential</p>
                               </div>
                             </div>
 
@@ -1227,7 +1229,7 @@ export default function App() {
                                   navigator.clipboard.writeText(tok);
                                   setToastMessage({ text: "Key copied! Protect your secrets.", type: "info" });
                                 }}
-                                className="p-2 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors cursor-pointer"
+                                className="p-2 hover:bg-slate-100 text-slate-500 hover:text-slate-900 rounded-lg transition-colors cursor-pointer"
                                 title="Copy Key"
                               >
                                 <Copy className="w-4 h-4" />
@@ -1247,7 +1249,7 @@ export default function App() {
                   </div>
 
                   {/* REST Endpoint details */}
-                  <div className="bg-slate-900 rounded-2xl p-5 md:p-6 text-slate-200 border border-slate-850">
+                  <div className="bg-slate-900 rounded-lg p-5 md:p-6 text-slate-200 border border-slate-850">
                     <h3 className="text-sm font-bold text-white mb-2 font-display flex items-center gap-2">
                       <Terminal className="w-4 h-4 text-emerald-400" /> Endpoint Documentation
                     </h3>
@@ -1271,8 +1273,8 @@ export default function App() {
                       <div>
                         <span className="text-[11px] font-bold text-indigo-300">Request Body Parameters (JSON)</span>
                         <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-400 mt-1">
-                          <p><span className="text-indigo-400">"targetUrl"</span>: <span className="text-emerald-400">"https://example.com/long-page"</span> <span className="text-slate-600">(string, required)</span></p>
-                          <p><span className="text-indigo-400">"customAlias"</span>: <span className="text-emerald-400">"myblog"</span> <span className="text-slate-600">(string, optional)</span></p>
+                          <p><span className="text-slate-300">"targetUrl"</span>: <span className="text-emerald-400">"https://example.com/long-page"</span> <span className="text-slate-600">(string, required)</span></p>
+                          <p><span className="text-slate-300">"customAlias"</span>: <span className="text-emerald-400">"myblog"</span> <span className="text-slate-600">(string, optional)</span></p>
                         </div>
                       </div>
                     </div>
@@ -1293,12 +1295,12 @@ export default function App() {
                                 navigator.clipboard.writeText(curlCode);
                                 setToastMessage({ text: "Bash / cURL snippet copied!", type: "info" });
                               }}
-                              className="text-indigo-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                              className="text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer"
                             >
                               <Copy className="w-3 h-3" /> Copy
                             </button>
                           </div>
-                          <pre className="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[10px] leading-relaxed text-emerald-400 overflow-x-auto select-all">
+                          <pre className="bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-[10px] leading-relaxed text-emerald-400 overflow-x-auto select-all">
 {`curl -X POST ${window.location.protocol}//${window.location.host}/api/shorten \\
   -H "Authorization: Bearer ${user.apiTokens[0] || "shrt_live_YOUR_TOKEN"}" \\
   -H "Content-Type: application/json" \\
@@ -1317,12 +1319,12 @@ export default function App() {
                                 navigator.clipboard.writeText(nodeCode);
                                 setToastMessage({ text: "NodeJS fetch snippet copied!", type: "info" });
                               }}
-                              className="text-indigo-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                              className="text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer"
                             >
                               <Copy className="w-3 h-3" /> Copy
                             </button>
                           </div>
-                          <pre className="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[10px] leading-relaxed text-emerald-400 overflow-x-auto select-all">
+                          <pre className="bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-[10px] leading-relaxed text-emerald-400 overflow-x-auto select-all">
 {`fetch("${window.location.protocol}//${window.location.host}/api/shorten", {
   method: "POST",
   headers: {
@@ -1347,33 +1349,33 @@ export default function App() {
         {/* TAB 3: SHEET & CSV SYNC WORKSPACE */}
         {activeTab === "sheets" && (
           <div className="space-y-6">
-            {/* BULK CSV WORKSPACE SHORTENER */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-xs">
+            {/* BULK CSV WORKSPACE */}
+            <section className="spatial-panel rounded-lg p-6 md:p-8">
               <span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold tracking-widest uppercase rounded-full">Automated utilities</span>
-              <h2 className="text-xl font-bold font-display text-slate-900 mt-2">Bulk Redirect Link Generation</h2>
+              <h2 className="text-xl font-bold font-display text-slate-900 mt-2">Bulk link creation</h2>
               <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                Paste lists of external URLs and instantly compress them together. Export computed shortened links smoothly as a clean CSV format table.
+                Paste a list of URLs, create short links, and export the results as CSV.
               </p>
 
               <form onSubmit={handleBulkShortenSubmit} className="mt-5 space-y-4">
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Paste Links List (One per line or comma separated)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">URLs, one per line or comma separated</label>
                   <textarea
                     required
-                    placeholder="https://google.com/search?q=1&#10;https://wikipedia.org/wiki/SaaS&#10;https://news.ycombinator.com"
+                    placeholder="https://google.com/search?q=1&#10;https://wikipedia.org/wiki/Links&#10;https://news.ycombinator.com"
                     value={bulkUrlInput}
                     onChange={e => setBulkUrlInput(e.target.value)}
                     rows={4}
-                    className="w-full p-4 bg-[#fcfdfe] hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-hidden text-slate-800 rounded-xl font-mono text-xs transition-all shadow-2xs"
+                    className="w-full p-4 bg-[#fcfdfe] hover:bg-white focus:bg-white border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-hidden text-slate-800 rounded-lg font-mono text-xs transition-all shadow-2xs"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-semibold leading-none">Converts target URL list immediately in browser safely.</span>
+                  <span className="text-[10px] text-slate-400 font-semibold leading-none">Creates links through your server API.</span>
                   <button
                     type="submit"
                     disabled={isBulkLoading || !bulkUrlInput.trim()}
-                    className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-transform flex items-center gap-1.5 cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 shrink-0"
+                    className="py-2.5 px-5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-xs transition-transform flex items-center gap-1.5 cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 shrink-0"
                   >
                     {isBulkLoading ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                     <span>{isBulkLoading ? "Batch Processing..." : "Process Batch"}</span>
@@ -1394,7 +1396,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="overflow-x-auto border border-slate-150 rounded-xl md:max-h-72">
+                  <div className="overflow-x-auto border border-slate-150 rounded-lg md:max-h-72">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-slate-50 font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-150">
@@ -1407,7 +1409,7 @@ export default function App() {
                         {bulkResults.map((r, i) => (
                           <tr key={i} className="hover:bg-slate-50/50">
                             <td className="p-3 truncate max-w-[200px] text-slate-500 select-all" title={r.original}>{r.original}</td>
-                            <td className="p-3 text-indigo-600 font-bold select-all">{r.short}</td>
+                            <td className="p-3 text-slate-900 font-bold select-all">{r.short}</td>
                             <td className="p-3">
                               <a href={r.testLink} target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline select-all inline-flex items-center gap-0.5 font-bold">
                                 {r.testLink} <ExternalLink className="w-3 h-3 shrink-0" />
@@ -1423,31 +1425,31 @@ export default function App() {
             </section>
 
             {/* GOOGLE SHEET AUTOMATIC INTEGRATION INSTRUCTIONS */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-xs">
-              <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold tracking-widest uppercase rounded-full">Google Workspace Integration</span>
-              <h2 className="text-xl font-bold font-display text-slate-900 mt-2">Auto-Shorten Google Sheets Links</h2>
+            <section className="spatial-panel rounded-lg p-6 md:p-8">
+              <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-bold tracking-widest uppercase rounded-full">Google Workspace Integration</span>
+              <h2 className="text-xl font-bold font-display text-slate-900 mt-2">Google Sheets automation</h2>
               <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                Connect your active personal files inside Google Sheets and automate redirection link shortening directly at edits! When a long link is entered into Column A, Google Sheets will automatically generate the shortened link in Column B inside your file.
+                Use Apps Script to create short links from Google Sheets rows.
               </p>
 
               <div className="mt-5 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-xl">
-                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-[10.5px] font-bold flex items-center justify-center border border-indigo-200">1</span>
+                  <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-lg">
+                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-slate-900 text-[10.5px] font-bold flex items-center justify-center border border-indigo-200">1</span>
                     <h4 className="text-xs font-bold mt-2.5 text-slate-900 uppercase">Initialize Script</h4>
                     <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                       Open your sheet file in Google Drive. Navigate to the top navigation header, select <strong>Extensions &gt; Apps Script</strong>.
                     </p>
                   </div>
-                  <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-xl">
-                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-[10.5px] font-bold flex items-center justify-center border border-indigo-200">2</span>
+                  <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-lg">
+                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-slate-900 text-[10.5px] font-bold flex items-center justify-center border border-indigo-200">2</span>
                     <h4 className="text-xs font-bold mt-2.5 text-slate-900 uppercase">Paste Script Code</h4>
                     <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                       Delete all existing template lines and paste the copy-pasteable custom Apps Script code code below.
                     </p>
                   </div>
-                  <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-xl">
-                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-[10.5px] font-bold flex items-center justify-center border border-indigo-200">3</span>
+                  <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-lg">
+                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-slate-900 text-[10.5px] font-bold flex items-center justify-center border border-indigo-200">3</span>
                     <h4 className="text-xs font-bold mt-2.5 text-slate-900 uppercase">Save & Run</h4>
                     <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                       Enter your generated API Key Token below, click Save inside the Apps Script editor, and enter a link in sheet cell A2! Column B2 will update.
@@ -1455,17 +1457,17 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-slate-900 text-slate-200 rounded-xl p-5 border border-slate-800">
+                <div className="bg-slate-900 text-slate-200 rounded-lg p-5 border border-slate-800">
                   <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase tracking-widest font-mono mb-2">
                     <span>Google Apps Script Template Code</span>
                     <button
                       onClick={() => {
                         const activeTok = user?.apiTokens[0] || "YOUR_API_TOKEN";
-                        const googleScriptCode = `// Google Apps Script trigger\n// When sheet is edited, automatically shortens empty rows\nfunction onEdit(e) {\n  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();\n  var range = e.range;\n  var row = range.getRow();\n  var col = range.getColumn();\n  \n  // Check if Column A is edited and is not a header\n  if (col === 1 && row > 1) {\n    var longUrl = range.getValue().toString().trim();\n    var shortColRange = sheet.getRange(row, 2);\n    \n    // Only shorten if Column B is currently empty\n    if (longUrl && !shortColRange.getValue()) {\n      try {\n        shortColRange.setValue("Creating...");\n        \n        var apiToken = "${activeTok}";\n        var apiEndpoint = "${window.location.protocol}//${window.location.host}/api/shorten";\n        \n        var payload = {\n          "targetUrl": longUrl\n        };\n        \n        var options = {\n          "method": "post",\n          "contentType": "application/json",\n          "headers": {\n            "Authorization": "Bearer " + apiToken\n          },\n          "payload": JSON.stringify(payload),\n          "muteHttpExceptions": true\n        };\n        \n        var response = UrlFetchApp.fetch(apiEndpoint, options);\n        var json = JSON.parse(response.getContentText());\n        \n        if (json.id) {\n          shortColRange.setValue("https://short.ly/" + json.id);\n        } else {\n          shortColRange.setValue("Error: " + (json.error || "Failed"));\n        }\n      } catch(err) {\n        shortColRange.setValue("Error: " + err.toString());\n      }\n    }\n  }\n}`;
+                        const googleScriptCode = `// Google Apps Script trigger\n// When sheet is edited, automatically shortens empty rows\nfunction onEdit(e) {\n  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();\n  var range = e.range;\n  var row = range.getRow();\n  var col = range.getColumn();\n  \n  // Check if Column A is edited and is not a header\n  if (col === 1 && row > 1) {\n    var longUrl = range.getValue().toString().trim();\n    var shortColRange = sheet.getRange(row, 2);\n    \n    // Only shorten if Column B is currently empty\n    if (longUrl && !shortColRange.getValue()) {\n      try {\n        shortColRange.setValue("Creating...");\n        \n        var apiToken = "${activeTok}";\n        var apiEndpoint = "${window.location.protocol}//${window.location.host}/api/shorten";\n        \n        var payload = {\n          "targetUrl": longUrl\n        };\n        \n        var options = {\n          "method": "post",\n          "contentType": "application/json",\n          "headers": {\n            "Authorization": "Bearer " + apiToken\n          },\n          "payload": JSON.stringify(payload),\n          "muteHttpExceptions": true\n        };\n        \n        var response = UrlFetchApp.fetch(apiEndpoint, options);\n        var json = JSON.parse(response.getContentText());\n        \n        if (json.id) {\n          shortColRange.setValue("https://minilinks.onrender.com/" + json.id);\n        } else {\n          shortColRange.setValue("Error: " + (json.error || "Failed"));\n        }\n      } catch(err) {\n        shortColRange.setValue("Error: " + err.toString());\n      }\n    }\n  }\n}`;
                         navigator.clipboard.writeText(googleScriptCode);
                         setToastMessage({ text: "Apps Script trigger template code copied!", type: "info" });
                       }}
-                      className="text-indigo-400 hover:text-white flex items-center gap-1 cursor-pointer font-bold lowercase"
+                      className="text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer font-bold lowercase"
                     >
                       <Copy className="w-3.2 h-3.2" /> Copy template script
                     </button>
@@ -1511,7 +1513,7 @@ function onEdit(e) {
         var json = JSON.parse(response.getContentText());
         
         if (json.id) {
-          shortColRange.setValue("https://short.ly/" + json.id);
+          shortColRange.setValue("https://minilinks.onrender.com/" + json.id);
         } else {
           shortColRange.setValue("Error: " + (json.error || "Failed"));
         }
@@ -1531,30 +1533,30 @@ function onEdit(e) {
         {/* TAB 4: ACCOUNT & BILLING */}
         {activeTab === "account" && (
           <div className="space-y-6">
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-xs">
-              <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold tracking-widest uppercase rounded-full">Account Management</span>
+            <section className="spatial-panel rounded-lg p-6 md:p-8">
+              <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-bold tracking-widest uppercase rounded-full">Account Management</span>
               <h2 className="text-xl font-bold font-display text-slate-900 mt-2">Subscription & Access</h2>
               <p className="text-sm text-slate-500 mt-1">
                 Manage plan access for paid users and complimentary accounts.
               </p>
 
               {!user ? (
-                <div className="mt-6 p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 max-w-md mx-auto">
-                  <Lock className="w-10 h-10 text-indigo-500 mx-auto mb-3" />
+                <div className="mt-6 p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200 max-w-md mx-auto">
+                  <Lock className="w-10 h-10 text-slate-700 mx-auto mb-3" />
                   <h4 className="font-bold text-slate-900">Sign in to manage billing</h4>
                   <button
                     onClick={() => {
                       setShowAuthForm(true);
                       setAuthError(null);
                     }}
-                    className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer"
+                    className="mt-4 px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer"
                   >
                     Account Login
                   </button>
                 </div>
               ) : (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2 border border-slate-150 rounded-xl p-5 bg-slate-50">
+                  <div className="md:col-span-2 border border-slate-150 rounded-lg p-5 bg-slate-50">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h3 className="text-sm font-bold text-slate-900">{user.email}</h3>
@@ -1587,7 +1589,7 @@ function onEdit(e) {
                     </div>
                   </div>
 
-                  <div className="border border-slate-150 rounded-xl p-5 bg-white flex flex-col justify-between gap-4">
+                  <div className="border border-slate-150 rounded-lg p-5 bg-white flex flex-col justify-between gap-4">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">Pro Subscription</h3>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -1597,7 +1599,7 @@ function onEdit(e) {
                     <button
                       onClick={handleStartCheckout}
                       disabled={isBillingLoading || hasProAccess}
-                      className="w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full px-4 py-2.5 bg-slate-950 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       {isBillingLoading ? <RotateCw className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
                       <span>{hasProAccess ? "Access Active" : "Upgrade to Pro"}</span>
@@ -1613,18 +1615,18 @@ function onEdit(e) {
         {activeTab === "guide" && (
           <div className="space-y-6">
             {/* SAAS MONETIZATION STARTER CARD */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-xs">
-              <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold tracking-widest uppercase rounded-full">SaaS Launch & Monetization Manual</span>
-              <h2 className="text-xl font-bold font-display text-slate-900 mt-2">Turn Redirect Links into a Profitable SaaS Business</h2>
+            <section className="spatial-panel rounded-lg p-6 md:p-8">
+              <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-bold tracking-widest uppercase rounded-full">Launch guide</span>
+              <h2 className="text-xl font-bold font-display text-slate-900 mt-2">Subscriptions</h2>
               <p className="text-sm text-slate-500 mt-1">
-                A URL Shortener model scales easily because it offers high-volume utility. Learn the standard patterns to monetize active traffic and charge external developers.
+                Use subscriptions, API access, and complimentary accounts to manage paid usage.
               </p>
 
               <div className="mt-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Stripe sub model */}
-                  <div className="border border-slate-150 p-5 rounded-xl bg-slate-50">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-3">
+                  <div className="border border-slate-150 p-5 rounded-lg bg-slate-50">
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-900 mb-3">
                       <DollarSign className="w-5 h-5" />
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 uppercase">1. Subscription Plans (Stripe Checkout)</h3>
@@ -1634,18 +1636,18 @@ function onEdit(e) {
                   </div>
 
                   {/* Dev tier model */}
-                  <div className="border border-slate-150 p-5 rounded-xl bg-slate-50">
+                  <div className="border border-slate-150 p-5 rounded-lg bg-slate-50">
                     <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-3">
                       <Terminal className="w-5 h-5" />
                     </div>
-                    <h3 className="text-sm font-bold text-slate-900 uppercase">2. Paid Developer API Limits</h3>
+                    <h3 className="text-sm font-bold text-slate-900 uppercase">2. Paid API limits</h3>
                     <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                       Charge companies based on link processing volumes. Keep Guest and Free plans at 100 links/month, while Charging $29/month for enterprise API rate limits with 10,000 links/month constraints.
                     </p>
                   </div>
 
                   {/* Ad middleware */}
-                  <div className="border border-slate-150 p-5 rounded-xl bg-slate-50">
+                  <div className="border border-slate-150 p-5 rounded-lg bg-slate-50">
                     <div className="w-9 h-9 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 mb-3">
                       <Compass className="w-5 h-5" />
                     </div>
@@ -1656,13 +1658,13 @@ function onEdit(e) {
                   </div>
 
                   {/* Custom brands */}
-                  <div className="border border-slate-150 p-5 rounded-xl bg-slate-50">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-3">
+                  <div className="border border-slate-150 p-5 rounded-lg bg-slate-50">
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-900 mb-3">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 uppercase">4. Private Branded Domains</h3>
                     <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                      Allow corporate teams to point custom redirection URLs (e.g., <code className="text-indigo-600 font-bold font-mono">company.lnk/new</code>) to your website, mapping records automatically using custom subdomain server triggers.
+                      Allow corporate teams to point custom redirection URLs (e.g., <code className="text-slate-900 font-bold font-mono">company.lnk/new</code>) to your website, mapping records automatically using custom subdomain server triggers.
                     </p>
                   </div>
                 </div>
@@ -1670,15 +1672,15 @@ function onEdit(e) {
             </section>
 
             {/* DEPLOYMENT GUIDE */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-xs">
-              <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold tracking-widest uppercase rounded-full">Shipping Deployment Guide</span>
+            <section className="spatial-panel rounded-lg p-6 md:p-8">
+              <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-bold tracking-widest uppercase rounded-full">Shipping Deployment Guide</span>
               <h2 className="text-xl font-bold font-display text-slate-900 mt-2">How to Deploy and Host Globally</h2>
               <p className="text-sm text-slate-500 mt-1 leading-relaxed">
                 Connect your active project to cloud platforms to reach millions. This full-stack Node/Vite template compiles naturally to standard server containers.
               </p>
 
               <div className="mt-5 space-y-4">
-                <div className="border-l-2 border-indigo-600 pl-4 space-y-4">
+                <div className="border-l-2 border-slate-900 pl-4 space-y-4">
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 uppercase">Option A: Deploy to Firebase Hosting & Cloud Run</h4>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -1707,7 +1709,7 @@ function onEdit(e) {
       {/* Footer copyright */}
       <footer className="text-center py-10 mt-auto bg-slate-100 border-t border-slate-200 text-slate-500">
         <p className="text-xs text-slate-400 font-mono uppercase tracking-wider">
-          FULL-STACK LINK SHRTNR • BRANDEED REDIRECTION SYSTEM
+          MINILINKS • LINK MANAGEMENT
         </p>
       </footer>
 
