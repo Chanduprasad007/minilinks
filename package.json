@@ -1,0 +1,22 @@
+{
+  "name": "minilinks",
+  "version": "1.0.0",
+  "description": "A complete URL shortener with redirects, custom aliases, QR-ready links, and click analytics.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "url-shortener",
+    "analytics",
+    "qr-codes",
+    "links"
+  ],
+  "license": "MIT"
+}
