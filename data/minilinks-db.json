@@ -1,0 +1,49 @@
+{
+  "links": [
+    {
+      "id": "c03945a6-8769-462c-a266-2064209673cf",
+      "slug": "app--iez",
+      "longUrl": "https://app.devrev.ai/smallcasebp/works?group_by=owned_by&group_by_properties=%5B%7B%22groupBy%22%3A%22owned_by%22%2C%22sortGroupsBy%22%3A%5B%22group.total%3Aasc%22%5D%7D%5D&quickAccessId=don%3Acore%3Advrv-in-1%3Adevo%2F2t5xv7XPAA%3Avista%2F712&sort_by=created_date%3Adesc&stage=work_in_progress%2Cawaiting_customer_response%2CAwaiting+Product%2FTech%2CAwaiting+Partner+Response%2Cqueued&stage_op=any&subtype=dealer_support&subtype_op=any&type=ticket&vista_view_type=list",
+      "title": "",
+      "campaign": "",
+      "domain": "mini.local",
+      "qrEnabled": true,
+      "active": true,
+      "createdAt": "2026-07-09T12:33:57.533Z",
+      "updatedAt": "2026-07-09T12:33:57.533Z"
+    },
+    {
+      "id": "9fc9c802-1742-4877-98ae-1e2b54004945",
+      "slug": "demo-launch",
+      "longUrl": "https://example.com/product?utm_source=minilinks",
+      "title": "Demo launch",
+      "campaign": "Launch",
+      "domain": "mini.local",
+      "qrEnabled": true,
+      "active": true,
+      "createdAt": "2026-07-09T12:32:01.076Z",
+      "updatedAt": "2026-07-09T12:32:01.076Z"
+    }
+  ],
+  "clicks": [
+    {
+      "id": "e450be2b-39db-4f2f-bbdb-4cb5bc8087e8",
+      "linkId": "9fc9c802-1742-4877-98ae-1e2b54004945",
+      "slug": "demo-launch",
+      "referrer": "",
+      "browser": "Other",
+      "ipHash": "eff8e7ca506627fe",
+      "createdAt": "2026-07-09T12:32:32.997Z"
+    },
+    {
+      "id": "fad164ba-7f62-4946-8d44-d193f6215376",
+      "linkId": "c03945a6-8769-462c-a266-2064209673cf",
+      "slug": "app--iez",
+      "referrer": "",
+      "browser": "Chrome",
+      "ipHash": "eff8e7ca506627fe",
+      "createdAt": "2026-07-09T12:34:05.919Z"
+    }
+  ],
+  "createdAt": "2026-07-09T12:31:41.071Z"
+}

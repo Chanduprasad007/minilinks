@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MiniLinks | Link Operations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <a class="brand" href="/">
+          <span class="brand-mark">ml</span>
+          <span>MiniLinks</span>
+        </a>
+        <nav class="side-nav">
+          <a class="active" href="#create">Create</a>
+          <a href="#links">Links</a>
+          <a href="#analytics">Analytics</a>
+          <a href="#deploy">Deploy</a>
+        </nav>
+        <div class="research-note">
+          <strong>Product cues</strong>
+          <span>Short links, QR codes, branded aliases, analytics, bulk-ready management.</span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="kicker">Link operations workspace</p>
+            <h1>Shorten, route, and measure every campaign link.</h1>
+          </div>
+          <div class="topbar-actions">
+            <a class="button ghost" href="/api/export.csv">Export CSV</a>
+            <a class="button primary" href="#create">New link</a>
+          </div>
+        </header>
+
+        <section class="summary-grid" id="analytics" aria-label="Analytics summary">
+          <article class="summary-card">
+            <span>Total links</span>
+            <strong id="total-links">0</strong>
+            <small>Managed redirects</small>
+          </article>
+          <article class="summary-card">
+            <span>Total clicks</span>
+            <strong id="total-clicks">0</strong>
+            <small>Tracked redirect events</small>
+          </article>
+          <article class="summary-card">
+            <span>Campaigns</span>
+            <strong id="total-campaigns">0</strong>
+            <small>Grouped link sets</small>
+          </article>
+          <article class="summary-card">
+            <span>QR ready</span>
+            <strong id="total-qr">0</strong>
+            <small>Links with QR previews</small>
+          </article>
+        </section>
+
+        <section class="work-grid">
+          <section class="panel create-panel" id="create" aria-labelledby="create-title">
+            <div class="panel-heading">
+              <div>
+                <p class="kicker">Short link</p>
+                <h2 id="create-title">Create a managed redirect</h2>
+              </div>
+              <span class="status-badge" id="api-status">Checking API</span>
+            </div>
+
+            <form id="link-form" class="link-form">
+              <label>
+                Destination URL
+                <input id="long-url" name="longUrl" type="url" placeholder="https://example.com/campaign/launch?utm_source=email" required />
+              </label>
+
+              <div class="field-row">
+                <label>
+                  Custom alias
+                  <input id="alias" name="alias" type="text" placeholder="spring-drop" minlength="3" />
+                </label>
+                <label>
+                  Campaign
+                  <input id="campaign" name="campaign" type="text" placeholder="Q3 launch" />
+                </label>
+              </div>
+
+              <label>
+                Internal title
+                <input id="title" name="title" type="text" placeholder="Newsletter hero CTA" />
+              </label>
+
+              <div class="option-row">
+                <label class="check-option"><input id="qr-enabled" type="checkbox" checked /> QR preview</label>
+                <label class="check-option"><input id="tracking-enabled" type="checkbox" checked disabled /> Click tracking</label>
+              </div>
+
+              <button class="button primary form-submit" type="submit">
+                <span>Create MiniLink</span>
+                <span aria-hidden="true">-></span>
+              </button>
+              <p class="form-message" id="form-message" role="status"></p>
+            </form>
+          </section>
+
+          <section class="panel result-panel" aria-labelledby="result-title">
+            <div class="panel-heading">
+              <div>
+                <p class="kicker">Latest result</p>
+                <h2 id="result-title">Ready to publish</h2>
+              </div>
+            </div>
+            <div class="short-link-card">
+              <span>Short URL</span>
+              <strong id="short-url">Create a link first</strong>
+              <button class="button ghost" id="copy-link" type="button">Copy</button>
+            </div>
+            <div class="qr-box">
+              <img id="qr-image" alt="QR code preview for the latest short link" />
+              <div>
+                <strong>QR preview</strong>
+                <span>Generated from the short URL. Use a first-party QR service before production launch.</span>
+              </div>
+            </div>
+            <div class="feature-list" aria-label="Included capabilities">
+              <span>Custom back-halves</span>
+              <span>Redirect analytics</span>
+              <span>Campaign labels</span>
+              <span>CSV export</span>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel links-panel" id="links" aria-labelledby="links-title">
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Link management</p>
+              <h2 id="links-title">Recent MiniLinks</h2>
+            </div>
+            <button class="button ghost" id="refresh-links" type="button">Refresh</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Short link</th>
+                  <th>Destination</th>
+                  <th>Campaign</th>
+                  <th>Clicks</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody id="links-table">
+                <tr>
+                  <td colspan="5">Loading links...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="insight-grid">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="kicker">Referrers</p>
+                <h2>Traffic sources</h2>
+              </div>
+            </div>
+            <div class="bar-list" id="referrer-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="kicker">Browsers</p>
+                <h2>Audience environment</h2>
+              </div>
+            </div>
+            <div class="bar-list" id="browser-list"></div>
+          </article>
+        </section>
+
+        <section class="panel deploy-panel" id="deploy">
+          <div>
+            <p class="kicker">Production path</p>
+            <h2>What this needs before becoming a Bitly-scale product</h2>
+          </div>
+          <div class="deploy-grid">
+            <article>
+              <strong>Durable data</strong>
+              <span>Replace the local JSON file with Postgres and put Redis in front for hot redirects.</span>
+            </article>
+            <article>
+              <strong>Custom domains</strong>
+              <span>Add DNS verification, TLS automation, and per-domain routing rules.</span>
+            </article>
+            <article>
+              <strong>Abuse protection</strong>
+              <span>Rate limits, malware scanning, phishing reports, and takedown workflows are mandatory.</span>
+            </article>
+            <article>
+              <strong>Team accounts</strong>
+              <span>Add auth, workspaces, roles, billing, audit logs, and API keys.</span>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
