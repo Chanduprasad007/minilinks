@@ -1,6 +1,6 @@
 # MiniLinks
 
-MiniLinks is a complete starter URL shortener scrape research in `.firecrawl/`. It includes a product UI, a backend API, managed short links, custom aliases, redirect tracking, analytics summaries, QR previews, and CSV export.
+MiniLinks is a complete starter URL shortener inspired by the Bitly and TinyURL scrape research in `.firecrawl/`. It includes a product UI, a backend API, managed short links, custom aliases, redirect tracking, analytics summaries, QR previews, and CSV export.
 
 ## Run Locally
 
