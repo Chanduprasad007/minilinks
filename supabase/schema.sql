@@ -1,5 +1,3 @@
-create extension if not exists pgcrypto;
-
 create table if not exists links (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
@@ -43,7 +41,3 @@ create index if not exists api_keys_key_prefix_idx on api_keys(key_prefix);
 alter table links enable row level security;
 alter table click_events enable row level security;
 alter table api_keys enable row level security;
-
--- The current backend uses the Supabase service-role key from Render.
--- That bypasses RLS. When you add real user login, replace this with
--- workspace-owned policies instead of exposing these tables directly.
