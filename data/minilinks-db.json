@@ -10,7 +10,9 @@
       "qrEnabled": true,
       "active": true,
       "createdAt": "2026-07-09T12:33:57.533Z",
-      "updatedAt": "2026-07-09T12:33:57.533Z"
+      "updatedAt": "2026-07-09T12:33:57.533Z",
+      "workspaceId": "00000000-0000-4000-8000-000000000001",
+      "riskStatus": "clean"
     },
     {
       "id": "9fc9c802-1742-4877-98ae-1e2b54004945",
@@ -22,7 +24,9 @@
       "qrEnabled": true,
       "active": true,
       "createdAt": "2026-07-09T12:32:01.076Z",
-      "updatedAt": "2026-07-09T12:32:01.076Z"
+      "updatedAt": "2026-07-09T12:32:01.076Z",
+      "workspaceId": "00000000-0000-4000-8000-000000000001",
+      "riskStatus": "clean"
     }
   ],
   "clicks": [
@@ -45,5 +49,52 @@
       "createdAt": "2026-07-09T12:34:05.919Z"
     }
   ],
-  "createdAt": "2026-07-09T12:31:41.071Z"
+  "createdAt": "2026-07-09T12:31:41.071Z",
+  "workspaces": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "MiniLinks HQ",
+      "slug": "minilinks-hq",
+      "plan": "starter",
+      "createdAt": "2026-07-14T08:26:55.701Z"
+    }
+  ],
+  "members": [
+    {
+      "id": "5a3be0fd-5e9e-4eba-b66d-8bad41b4149a",
+      "workspaceId": "00000000-0000-4000-8000-000000000001",
+      "userId": "local-owner",
+      "email": "owner@minilinks.local",
+      "role": "owner",
+      "createdAt": "2026-07-14T08:26:55.701Z"
+    }
+  ],
+  "apiKeys": [],
+  "auditLogs": [
+    {
+      "id": "081545dc-c9e3-455b-bf5d-f856c451c5a9",
+      "workspaceId": "00000000-0000-4000-8000-000000000001",
+      "actorId": "local-owner",
+      "action": "phishing_report.created",
+      "targetType": "phishing_report",
+      "targetId": "f6282526-8217-49a2-848d-90007cd68b7c",
+      "metadata": {
+        "url": "https://example.net/suspicious"
+      },
+      "ipHash": "d90c124b78e594c8",
+      "createdAt": "2026-07-14T08:27:16.741Z"
+    }
+  ],
+  "reports": [],
+  "takedowns": [],
+  "scans": [],
+  "billing": [
+    {
+      "workspaceId": "00000000-0000-4000-8000-000000000001",
+      "plan": "starter",
+      "status": "trialing",
+      "monthlyLinks": 1000
+    }
+  ],
+  "blockedDomains": []
 }

@@ -1,86 +1,94 @@
 # MiniLinks
 
-MiniLinks is a complete starter URL shortener inspired by the Bitly and TinyURL scrape research in `.firecrawl/`. It includes a product UI, a backend API, managed short links, custom aliases, redirect tracking, analytics summaries, QR previews, and CSV export.
+MiniLinks is a secure URL management product inspired by the Bitly and TinyURL research in `.firecrawl/`. It includes managed redirects, analytics, QR previews, Supabase authentication, workspaces, roles, billing state, audit logs, scoped API keys, rate limiting, destination scanning, phishing reports, and takedown workflows.
 
-## Run Locally
+For the complete email login, Google OAuth, API, custom-domain, and Render setup, follow [`DEPLOYMENT.md`](DEPLOYMENT.md).
+
+## Run locally
 
 ```bash
 npm start
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. Without Supabase environment variables, the app uses local JSON storage and an owner demo account.
 
-The local backend stores data in `data/minilinks-db.json`. That is useful for development, but it is not production storage.
+## Deploy with GitHub, Supabase, and Render
 
-## API
+### 1. Update GitHub
 
-```http
-POST /api/links
-GET /api/links
-GET /api/stats
-GET /api/export.csv
-GET /:slug
-GET /health
+Upload or push every changed file in this repository. In particular, include `server.js`, the entire `minilinks/` folder, `supabase/schema.sql`, `.env.example`, `render.yaml`, and this README.
+
+### 2. Prepare Supabase
+
+1. Open your Supabase project.
+2. Open **SQL Editor** and create a new query.
+3. Paste all of `supabase/schema.sql` and click **Run**.
+4. Open **Authentication > Providers > Email** and enable Email authentication.
+5. For easier testing, turn off **Confirm email** temporarily. Turn it back on before public launch.
+6. Open **Project Settings > API** and keep the page available for the next step.
+
+The schema does not run `CREATE EXTENSION`, so it avoids the read-only transaction error you saw earlier.
+
+### 3. Configure Render
+
+Open the Render Web Service, then **Environment**, and add:
+
+| Variable | Value |
+| --- | --- |
+| `SUPABASE_URL` | Exactly `https://YOUR_PROJECT_REF.supabase.co` with no `/rest/v1` suffix |
+| `SUPABASE_SECRET_KEY` | Supabase `sb_secret_...` key; server only |
+| `SUPABASE_PUBLISHABLE_KEY` | Supabase `sb_publishable_...` key; used for sign-up and sign-in |
+| `API_KEY_SECRET` | A long random value; Render can generate this |
+| `PUBLIC_BASE_URL` | Your Render URL, for example `https://minilinks.onrender.com` |
+
+Never place the secret key in `minilinks/script.js`, GitHub, screenshots, or browser code. MiniLinks still accepts the legacy `SUPABASE_SERVICE_ROLE_KEY`, but the new `sb_secret_...` key avoids legacy JWT clock and rotation problems.
+
+Click **Save Changes**, then **Manual Deploy > Deploy latest commit**. When deployment completes, open:
+
+```text
+https://YOUR-RENDER-SERVICE.onrender.com/health
 ```
 
-Example:
+You should see `{"ok":true,"storage":"supabase","auth":"supabase"}`.
+
+### 4. Create the first account
+
+Open the deployed website, choose **Team & billing**, enter your email and password, and choose **Create account**. Then sign in. The current build assigns the first signed-in user the owner product experience; add workspace-specific membership policies before inviting unrelated customers.
+
+### 5. Create and use an API key
+
+Open **API keys**, name the key, select permissions, and choose **Generate API key**. Copy the `ml_live_...` secret immediately because only its hash is stored.
 
 ```bash
-curl -X POST http://localhost:3000/api/links \
+curl -X POST https://YOUR-DOMAIN.com/v1/links \
+  -H "Authorization: Bearer ml_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"longUrl":"https://example.com","alias":"example","campaign":"launch"}'
+  -d '{"url":"https://example.com","alias":"example"}'
 ```
 
-## Deploy As A Real Product
+Public API routes:
 
-For a real Bitly-style product, do not deploy the JSON-file database as the final architecture. Use this repo as the product shell, then make these production changes:
+```text
+GET  /v1/links       requires links:read
+POST /v1/links       requires links:write
+```
 
-1. Replace `data/minilinks-db.json` with Postgres.
-   - Tables: `users`, `workspaces`, `domains`, `links`, `click_events`, `api_keys`.
-   - Index `links.slug`, `links.domain`, `click_events.link_id`, and `click_events.created_at`.
+## Security behavior
 
-2. Add Redis for redirect speed.
-   - Cache `domain + slug -> destination_url`.
-   - Keep redirects fast even when analytics writes are queued.
+- Dashboard link creation is limited to 30 requests per IP per minute.
+- Public API access is limited to 120 requests per API key per minute.
+- API keys are reveal-once and HMAC-hashed at rest.
+- Private/local network destinations, blocked domains, embedded credentials, and obvious phishing URL patterns are rejected.
+- Every scan and sensitive action is recorded.
+- Phishing reports and takedown requests have persistent review queues.
+- Redirects marked blocked will not resolve.
 
-3. Move click tracking to an async queue.
-   - Redirect first, then enqueue analytics.
-   - Use BullMQ, Cloudflare Queues, SQS, or a managed queue.
+## Required before charging customers
 
-4. Add authentication and workspaces.
-   - Use Clerk, Auth0, Supabase Auth, or NextAuth.
-   - Add roles, billing plans, API keys, and audit logs.
+This repository now has the product workflows, but three infrastructure integrations still require vendor accounts and secrets:
 
-5. Support custom domains.
-   - Require DNS verification with TXT/CNAME records.
-   - Automate TLS certificates.
-   - Route redirects by `Host` header plus slug.
+1. Replace the in-memory rate limiter with Upstash Redis so limits remain consistent across Render restarts and multiple instances.
+2. Add Google Web Risk, Cloudflare URL Scanner, or another reputation provider alongside the built-in heuristic scanner. Heuristics alone are not sufficient for a public shortening service.
+3. Connect `billing_accounts` to Stripe Checkout, Stripe Customer Portal, and signed Stripe webhooks. The current billing screen and schema track plan state but do not charge cards.
 
-6. Add abuse protection.
-   - Rate-limit link creation and redirects.
-   - Scan destinations for malware/phishing.
-   - Add report/takedown workflows.
-
-7. Host the app.
-   - Simple path: Render, Railway, Fly.io, or Heroku with Postgres.
-   - Edge path: Cloudflare Workers for redirects, Workers KV/D1/Queues, and a separate admin app.
-   - Scale path: API service on Fly.io/Render, Postgres on Neon/Supabase, Redis on Upstash, queue workers for analytics.
-
-## Render Deployment Sketch
-
-1. Push this repo to GitHub.
-2. Create a Render Web Service.
-3. Set build command to `npm install`.
-4. Set start command to `npm start`.
-5. Add `PORT` from Render automatically.
-6. Add a Postgres database and migrate the JSON storage before accepting real traffic.
-
-## Product Features To Build Next
-
-- Link edit/archive/delete.
-- Workspace login and ownership.
-- Branded domain verification.
-- QR code generation stored as first-party assets.
-- UTM builder.
-- Bulk import.
-- Public API with scoped keys.
+Also add user-scoped Supabase RLS policies before exposing Supabase directly to browsers. The Render backend uses the service-role key and must remain the only code that can access it.

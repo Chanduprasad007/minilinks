@@ -1,0 +1,76 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MiniLinks API",
+    "version": "1.0.0",
+    "description": "Create and list secure short links using a scoped MiniLinks API key."
+  },
+  "servers": [{ "url": "/", "description": "Current MiniLinks deployment" }],
+  "components": {
+    "securitySchemes": {
+      "MiniLinksKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "ml_live_..."
+      }
+    },
+    "schemas": {
+      "CreateLink": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "alias": { "type": "string", "minLength": 3, "maxLength": 48 },
+          "title": { "type": "string", "maxLength": 90 },
+          "campaign": { "type": "string", "maxLength": 80 },
+          "qrEnabled": { "type": "boolean", "default": true }
+        }
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "slug": { "type": "string" },
+          "longUrl": { "type": "string", "format": "uri" },
+          "title": { "type": "string" },
+          "campaign": { "type": "string" },
+          "active": { "type": "boolean" },
+          "riskStatus": { "type": "string", "enum": ["pending", "clean", "blocked", "review"] },
+          "clicks": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" } }
+      }
+    }
+  },
+  "paths": {
+    "/v1/links": {
+      "get": {
+        "summary": "List workspace links",
+        "security": [{ "MiniLinksKey": [] }],
+        "responses": {
+          "200": { "description": "Links and aggregate statistics" },
+          "401": { "description": "Missing, revoked, or insufficiently scoped key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Rate limit exceeded" }
+        }
+      },
+      "post": {
+        "summary": "Create a scanned short link",
+        "security": [{ "MiniLinksKey": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateLink" } } }
+        },
+        "responses": {
+          "201": { "description": "Link created", "content": { "application/json": { "schema": { "type": "object", "properties": { "link": { "$ref": "#/components/schemas/Link" } } } } } },
+          "401": { "description": "Missing, revoked, or insufficiently scoped key" },
+          "422": { "description": "Destination failed security scanning" },
+          "429": { "description": "Rate limit exceeded" }
+        }
+      }
+    }
+  }
+}

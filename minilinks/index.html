@@ -3,216 +3,169 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="MiniLinks secure link management workspace" />
     <title>MiniLinks | Link Operations</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Workspace navigation">
-        <a class="brand" href="/">
-          <span class="brand-mark">ml</span>
-          <span>MiniLinks</span>
+        <a class="brand" href="#overview" data-view-link="overview" aria-label="MiniLinks overview">
+          <span class="brand-mark">M</span>
+          <span class="brand-copy"><strong>MiniLinks</strong><small>Control plane</small></span>
         </a>
+
+        <button class="workspace-switch" type="button" data-view-link="team">
+          <span class="workspace-avatar">MH</span>
+          <span><strong id="workspace-name">MiniLinks HQ</strong><small id="workspace-plan">Starter workspace</small></span>
+          <i data-lucide="chevrons-up-down" aria-hidden="true"></i>
+        </button>
+
         <nav class="side-nav">
-          <a class="active" href="#create">Create</a>
-          <a href="#links">Links</a>
-          <a href="#analytics">Analytics</a>
-          <a href="#deploy">Deploy</a>
+          <p>Workspace</p>
+          <button class="nav-item active" type="button" data-view-link="overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></button>
+          <button class="nav-item" type="button" data-view-link="links"><i data-lucide="link-2"></i><span>Links</span></button>
+          <button class="nav-item" type="button" data-view-link="analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics</span></button>
+          <p>Developer</p>
+          <button class="nav-item" type="button" data-view-link="api-keys"><i data-lucide="key-round"></i><span>API keys</span><span class="nav-badge">API</span></button>
+          <button class="nav-item" type="button" data-view-link="security"><i data-lucide="shield-check"></i><span>Security</span></button>
+          <p>Organization</p>
+          <button class="nav-item" type="button" data-view-link="team"><i data-lucide="users"></i><span>Team & billing</span></button>
+          <button class="nav-item" type="button" data-view-link="audit"><i data-lucide="scroll-text"></i><span>Audit log</span></button>
         </nav>
-        <div class="research-note">
-          <strong>Product cues</strong>
-          <span>Short links, QR codes, branded aliases, analytics, bulk-ready management.</span>
+
+        <div class="sidebar-footer">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span><strong id="system-status">Connecting</strong><small>Redirect network</small></span>
         </div>
       </aside>
 
       <main class="workspace">
         <header class="topbar">
-          <div>
-            <p class="kicker">Link operations workspace</p>
-            <h1>Shorten, route, and measure every campaign link.</h1>
+          <div class="mobile-brand"><span class="brand-mark">M</span><strong>MiniLinks</strong></div>
+          <div class="topbar-context">
+            <span id="current-section">Overview</span>
+            <small>Production workspace</small>
           </div>
           <div class="topbar-actions">
-            <a class="button ghost" href="/api/export.csv">Export CSV</a>
-            <a class="button primary" href="#create">New link</a>
+            <button class="icon-button export-links" type="button" title="Export links as CSV" aria-label="Export links as CSV"><i data-lucide="download"></i></button>
+            <button class="button secondary" type="button" data-view-link="api-keys"><i data-lucide="key-round"></i> API key</button>
+            <button class="button primary" type="button" data-view-link="overview"><i data-lucide="plus"></i> New link</button>
+            <button class="account-button" id="account-button" type="button" data-view-link="team" aria-label="Open account settings"><span id="account-initials">OP</span></button>
           </div>
         </header>
 
-        <section class="summary-grid" id="analytics" aria-label="Analytics summary">
-          <article class="summary-card">
-            <span>Total links</span>
-            <strong id="total-links">0</strong>
-            <small>Managed redirects</small>
-          </article>
-          <article class="summary-card">
-            <span>Total clicks</span>
-            <strong id="total-clicks">0</strong>
-            <small>Tracked redirect events</small>
-          </article>
-          <article class="summary-card">
-            <span>Campaigns</span>
-            <strong id="total-campaigns">0</strong>
-            <small>Grouped link sets</small>
-          </article>
-          <article class="summary-card">
-            <span>QR ready</span>
-            <strong id="total-qr">0</strong>
-            <small>Links with QR previews</small>
-          </article>
-        </section>
+        <div class="notice hidden" id="global-notice" role="status"></div>
 
-        <section class="work-grid">
-          <section class="panel create-panel" id="create" aria-labelledby="create-title">
-            <div class="panel-heading">
-              <div>
-                <p class="kicker">Short link</p>
-                <h2 id="create-title">Create a managed redirect</h2>
-              </div>
-              <span class="status-badge" id="api-status">Checking API</span>
-            </div>
+        <section class="view active" data-view="overview" aria-labelledby="overview-title">
+          <div class="page-heading">
+            <div><h1 id="overview-title">Link operations</h1><p>Create trustworthy redirects and watch their performance in one place.</p></div>
+            <span class="status-badge" id="api-status">Checking API</span>
+          </div>
 
-            <form id="link-form" class="link-form">
-              <label>
-                Destination URL
-                <input id="long-url" name="longUrl" type="url" placeholder="https://example.com/campaign/launch?utm_source=email" required />
-              </label>
-
-              <div class="field-row">
-                <label>
-                  Custom alias
-                  <input id="alias" name="alias" type="text" placeholder="spring-drop" minlength="3" />
-                </label>
-                <label>
-                  Campaign
-                  <input id="campaign" name="campaign" type="text" placeholder="Q3 launch" />
-                </label>
-              </div>
-
-              <label>
-                Internal title
-                <input id="title" name="title" type="text" placeholder="Newsletter hero CTA" />
-              </label>
-
-              <div class="option-row">
-                <label class="check-option"><input id="qr-enabled" type="checkbox" checked /> QR preview</label>
-                <label class="check-option"><input id="tracking-enabled" type="checkbox" checked disabled /> Click tracking</label>
-              </div>
-
-              <button class="button primary form-submit" type="submit">
-                <span>Create MiniLink</span>
-                <span aria-hidden="true">-></span>
-              </button>
-              <p class="form-message" id="form-message" role="status"></p>
-            </form>
+          <section class="summary-strip" aria-label="Analytics summary">
+            <div><span>Total links</span><strong id="total-links">0</strong><small>managed redirects</small></div>
+            <div><span>Total clicks</span><strong id="total-clicks">0</strong><small>tracked events</small></div>
+            <div><span>Campaigns</span><strong id="total-campaigns">0</strong><small>active groups</small></div>
+            <div><span>QR ready</span><strong id="total-qr">0</strong><small>shareable codes</small></div>
           </section>
 
-          <section class="panel result-panel" aria-labelledby="result-title">
-            <div class="panel-heading">
-              <div>
-                <p class="kicker">Latest result</p>
-                <h2 id="result-title">Ready to publish</h2>
-              </div>
-            </div>
-            <div class="short-link-card">
-              <span>Short URL</span>
-              <strong id="short-url">Create a link first</strong>
-              <button class="button ghost" id="copy-link" type="button">Copy</button>
-            </div>
-            <div class="qr-box">
-              <img id="qr-image" alt="QR code preview for the latest short link" />
-              <div>
-                <strong>QR preview</strong>
-                <span>Generated from the short URL. Use a first-party QR service before production launch.</span>
-              </div>
-            </div>
-            <div class="feature-list" aria-label="Included capabilities">
-              <span>Custom back-halves</span>
-              <span>Redirect analytics</span>
-              <span>Campaign labels</span>
-              <span>CSV export</span>
-            </div>
+          <section class="work-grid">
+            <section class="panel create-panel" aria-labelledby="create-title">
+              <div class="panel-heading"><div><h2 id="create-title">Create a secure short link</h2><p>Every destination is scanned before publication.</p></div><span class="trust-mark"><i data-lucide="shield-check"></i> Protected</span></div>
+              <form id="link-form" class="link-form">
+                <label>Destination URL<input id="long-url" name="longUrl" type="url" placeholder="https://example.com/campaign/launch" required /></label>
+                <div class="field-row">
+                  <label>Custom alias<div class="input-prefix"><span>/</span><input id="alias" name="alias" type="text" placeholder="spring-drop" minlength="3" /></div></label>
+                  <label>Campaign<input id="campaign" name="campaign" type="text" placeholder="Q3 launch" /></label>
+                </div>
+                <label>Internal title<input id="title" name="title" type="text" placeholder="Newsletter hero CTA" /></label>
+                <div class="form-footer">
+                  <label class="check-option"><input id="qr-enabled" type="checkbox" checked /> Generate QR</label>
+                  <button class="button primary form-submit" type="submit"><i data-lucide="wand-sparkles"></i><span>Create MiniLink</span></button>
+                </div>
+                <p class="form-message" id="form-message" role="status"></p>
+              </form>
+            </section>
+
+            <section class="result-panel" aria-labelledby="result-title">
+              <div class="panel-heading"><div><h2 id="result-title">Latest link</h2><p>Ready for your next redirect.</p></div></div>
+              <div class="short-link-output"><span>Short URL</span><strong id="short-url">No link created yet</strong><button class="icon-button dark" id="copy-link" type="button" title="Copy short URL" aria-label="Copy short URL"><i data-lucide="copy"></i></button></div>
+              <div class="result-meta"><div class="qr-frame"><img id="qr-image" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="QR code preview for the latest short link" /><i data-lucide="qr-code" class="qr-placeholder"></i></div><div><strong>Instant QR</strong><p>Generated from your short URL and ready for campaign assets.</p></div></div>
+              <div class="security-line"><i data-lucide="scan-line"></i><span><strong>Destination scan active</strong><small>Private networks, blocked domains, and phishing patterns are denied.</small></span></div>
+            </section>
+          </section>
+
+          <section class="panel recent-panel">
+            <div class="panel-heading"><div><h2>Recent links</h2><p>Newest redirects across this workspace.</p></div><button class="button tertiary" type="button" data-view-link="links">View all <i data-lucide="arrow-right"></i></button></div>
+            <div class="table-wrap"><table><thead><tr><th>Short link</th><th>Destination</th><th>Campaign</th><th>Risk</th><th>Clicks</th><th>Created</th></tr></thead><tbody id="links-table"><tr><td colspan="6">Loading links...</td></tr></tbody></table></div>
           </section>
         </section>
 
-        <section class="panel links-panel" id="links" aria-labelledby="links-title">
-          <div class="panel-heading">
-            <div>
-              <p class="kicker">Link management</p>
-              <h2 id="links-title">Recent MiniLinks</h2>
-            </div>
-            <button class="button ghost" id="refresh-links" type="button">Refresh</button>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Short link</th>
-                  <th>Destination</th>
-                  <th>Campaign</th>
-                  <th>Clicks</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody id="links-table">
-                <tr>
-                  <td colspan="5">Loading links...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <section class="view" data-view="links" aria-labelledby="links-title">
+          <div class="page-heading"><div><h1 id="links-title">Managed links</h1><p>Search, inspect, and export every workspace redirect.</p></div><div class="heading-actions"><button class="button secondary export-links" type="button"><i data-lucide="download"></i> Export CSV</button><button class="button primary" type="button" data-view-link="overview"><i data-lucide="plus"></i> New link</button></div></div>
+          <section class="panel"><div class="toolbar"><label class="search-control"><i data-lucide="search"></i><input id="link-search" type="search" placeholder="Search links, campaigns, or destinations" /></label><button class="icon-button" id="refresh-links" type="button" title="Refresh links" aria-label="Refresh links"><i data-lucide="refresh-cw"></i></button></div><div class="table-wrap"><table><thead><tr><th>Short link</th><th>Destination</th><th>Campaign</th><th>Risk</th><th>Clicks</th><th>Created</th></tr></thead><tbody id="all-links-table"></tbody></table></div></section>
         </section>
 
-        <section class="insight-grid">
-          <article class="panel">
-            <div class="panel-heading">
-              <div>
-                <p class="kicker">Referrers</p>
-                <h2>Traffic sources</h2>
-              </div>
-            </div>
-            <div class="bar-list" id="referrer-list"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading">
-              <div>
-                <p class="kicker">Browsers</p>
-                <h2>Audience environment</h2>
-              </div>
-            </div>
-            <div class="bar-list" id="browser-list"></div>
-          </article>
+        <section class="view" data-view="analytics" aria-labelledby="analytics-title">
+          <div class="page-heading"><div><h1 id="analytics-title">Analytics</h1><p>Understand where traffic comes from and how it reaches you.</p></div><span class="period-control">Last 30 days</span></div>
+          <section class="summary-strip analytics-summary"><div><span>Redirect events</span><strong id="analytics-clicks">0</strong><small>all tracked clicks</small></div><div><span>Live links</span><strong id="analytics-links">0</strong><small>active destinations</small></div></section>
+          <section class="insight-grid"><article class="panel"><div class="panel-heading"><div><h2>Traffic sources</h2><p>Top referrers by redirect count.</p></div></div><div class="bar-list" id="referrer-list"></div></article><article class="panel"><div class="panel-heading"><div><h2>Audience environment</h2><p>Browser distribution for recorded clicks.</p></div></div><div class="bar-list" id="browser-list"></div></article></section>
         </section>
 
-        <section class="panel deploy-panel" id="deploy">
-          <div>
-            <p class="kicker">Production path</p>
-            <h2>What this needs before becoming a Bitly-scale product</h2>
-          </div>
-          <div class="deploy-grid">
-            <article>
-              <strong>Durable data</strong>
-              <span>Replace the local JSON file with Postgres and put Redis in front for hot redirects.</span>
-            </article>
-            <article>
-              <strong>Custom domains</strong>
-              <span>Add DNS verification, TLS automation, and per-domain routing rules.</span>
-            </article>
-            <article>
-              <strong>Abuse protection</strong>
-              <span>Rate limits, malware scanning, phishing reports, and takedown workflows are mandatory.</span>
-            </article>
-            <article>
-              <strong>Team accounts</strong>
-              <span>Add auth, workspaces, roles, billing, audit logs, and API keys.</span>
-            </article>
-          </div>
+        <section class="view" data-view="api-keys" aria-labelledby="keys-title">
+          <div class="page-heading"><div><h1 id="keys-title">API keys</h1><p>Create scoped credentials for automations and product integrations.</p></div><span class="status-badge ok"><i data-lucide="lock-keyhole"></i> Hashed at rest</span></div>
+          <section class="api-layout">
+            <section class="panel"><div class="panel-heading"><div><h2>Create a key</h2><p>The secret is shown once. Store it in your server environment.</p></div></div><form id="api-key-form" class="stack-form"><label>Key name<input id="api-key-name" type="text" placeholder="Production integration" required /></label><fieldset><legend>Permissions</legend><label class="check-row"><input type="checkbox" name="scope" value="links:read" checked /><span><strong>Read links</strong><small>List workspace links and metadata.</small></span></label><label class="check-row"><input type="checkbox" name="scope" value="links:write" checked /><span><strong>Create links</strong><small>Create scanned redirects through the API.</small></span></label><label class="check-row"><input type="checkbox" name="scope" value="analytics:read" /><span><strong>Read analytics</strong><small>Access aggregate click reporting.</small></span></label></fieldset><button class="button primary" type="submit"><i data-lucide="key-round"></i> Generate API key</button><p class="form-message" id="key-message"></p></form></section>
+            <aside class="code-panel"><div class="code-header"><span>Quick start</span><a href="/openapi.json" target="_blank" rel="noreferrer">OpenAPI spec</a></div><pre><code id="api-example">curl -X POST https://your-domain.com/v1/links \
+  -H "Authorization: Bearer ml_live_••••••" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}'</code></pre><button class="button code-copy" id="copy-code" type="button"><i data-lucide="copy"></i> Copy request</button></aside>
+          </section>
+          <section class="panel"><div class="panel-heading"><div><h2>Workspace keys</h2><p>Revoke credentials immediately when access changes.</p></div></div><div id="api-key-list" class="key-list"></div></section>
+        </section>
+
+        <section class="view" data-view="security" aria-labelledby="security-title">
+          <div class="page-heading"><div><h1 id="security-title">Trust & safety</h1><p>Enforced controls for creation traffic and abuse response.</p></div><span class="status-badge ok"><i data-lucide="shield-check"></i> Protection active</span></div>
+          <section class="security-grid"><div class="security-stat"><i data-lucide="gauge"></i><span><strong>30 / minute</strong><small>Dashboard creation limit</small></span></div><div class="security-stat"><i data-lucide="braces"></i><span><strong>120 / minute</strong><small>Per API credential</small></span></div><div class="security-stat"><i data-lucide="scan-line"></i><span><strong id="scan-count">0 scans</strong><small>Destination checks recorded</small></span></div></section>
+          <section class="security-workflow"><section class="panel"><div class="panel-heading"><div><h2>Report phishing</h2><p>Open an investigation for a suspicious URL.</p></div></div><form id="report-form" class="stack-form"><label>Suspicious URL<input id="report-url" type="url" placeholder="https://suspicious.example/path" required /></label><label>Reason<textarea id="report-reason" placeholder="Describe the impersonation or deceptive behavior" required></textarea></label><label>Contact email<input id="report-email" type="email" placeholder="security@company.com" /></label><button class="button danger" type="submit"><i data-lucide="flag"></i> Submit report</button><p class="form-message" id="report-message"></p></form></section><section class="panel"><div class="panel-heading"><div><h2>Request takedown</h2><p>Queue a managed link for policy review.</p></div></div><form id="takedown-form" class="stack-form"><label>MiniLink alias<input id="takedown-slug" type="text" placeholder="spring-drop" required /></label><label>Reason<textarea id="takedown-reason" placeholder="Explain the policy or legal issue" required></textarea></label><button class="button danger" type="submit"><i data-lucide="shield-x"></i> Request review</button><p class="form-message" id="takedown-message"></p></form></section></section>
+          <section class="panel"><div class="panel-heading"><div><h2>Safety queue</h2><p>Recent reports, scans, and takedown requests.</p></div></div><div id="security-feed" class="activity-list"></div></section>
+        </section>
+
+        <section class="view" data-view="team" aria-labelledby="team-title">
+          <div class="page-heading"><div><h1 id="team-title">Team & billing</h1><p>Control workspace access, roles, and subscription capacity.</p></div><span class="status-badge" id="auth-mode">Demo auth</span></div>
+          <section class="team-layout"><section class="panel"><div class="panel-heading"><div><h2>Members</h2><p>Roles determine access to links, keys, and billing.</p></div><button class="button secondary" type="button" disabled><i data-lucide="user-plus"></i> Invite</button></div><div id="member-list" class="member-list"></div></section><aside class="billing-panel"><span>Current plan</span><strong id="billing-plan">Starter</strong><p><span id="billing-limit">1,000</span> links per month</p><div class="usage-track"><span id="billing-usage"></span></div><small id="billing-status">Trialing</small><button class="button light" type="button" disabled>Manage billing</button></aside></section>
+          <section class="panel auth-panel">
+            <div><h2>Account access</h2><p>Email and Google sign-in are secured by Supabase Auth. Your login session is separate from the API keys used by integrations.</p></div>
+            <div class="auth-surface">
+              <div class="signed-in-state hidden" id="signed-in-state"><span class="member-avatar" id="signed-in-avatar">OP</span><span><strong id="signed-in-email">Signed in</strong><small>Your session renews automatically.</small></span><button class="button secondary" id="logout-button" type="button"><i data-lucide="log-out"></i> Sign out</button></div>
+              <form id="auth-form" class="auth-form">
+                <button class="button google-button" id="google-login" type="button"><span class="google-mark" aria-hidden="true">G</span> Continue with Google</button>
+                <div class="auth-divider"><span>or use email</span></div>
+                <label>Email<input id="auth-email" type="email" autocomplete="email" placeholder="you@company.com" required /></label>
+                <label>Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="Minimum 8 characters" minlength="8" required /></label>
+                <div class="auth-actions"><button class="button primary" type="submit">Sign in</button><button class="button secondary" type="button" id="signup-button">Create account</button></div>
+                <p class="form-message" id="auth-message" role="status"></p>
+              </form>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view="audit" aria-labelledby="audit-title">
+          <div class="page-heading"><div><h1 id="audit-title">Audit log</h1><p>A tamper-resistant trail of sensitive workspace activity.</p></div><span class="status-badge"><i data-lucide="database"></i> 30 latest events</span></div>
+          <section class="panel"><div id="audit-list" class="audit-list"></div></section>
         </section>
       </main>
     </div>
 
+    <div class="secret-reveal hidden" id="secret-reveal" role="dialog" aria-modal="true" aria-labelledby="secret-title">
+      <div class="secret-dialog"><button class="icon-button close-dialog" id="close-secret" type="button" aria-label="Close"><i data-lucide="x"></i></button><span class="success-icon"><i data-lucide="key-round"></i></span><h2 id="secret-title">API key created</h2><p>Copy it now. For security, MiniLinks will never show this secret again.</p><div class="secret-value"><code id="secret-value"></code><button class="icon-button" id="copy-secret" type="button" aria-label="Copy API key"><i data-lucide="copy"></i></button></div><button class="button primary" id="secret-done" type="button">I stored the key</button></div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script src="./script.js"></script>
   </body>
 </html>
