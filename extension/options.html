@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MiniLinks extension settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <a class="brand" href="https://minilinks.onrender.com" target="_blank" rel="noreferrer"><span>M</span><strong>MiniLinks</strong></a>
+      <div class="heading"><p>Extension settings</p><h1>Connect your workspace</h1><p>Create a scoped key in MiniLinks with <code>links:write</code>, then store it here. The key stays in Chrome's local extension storage.</p></div>
+
+      <form id="settings-form">
+        <label for="api-base">MiniLinks URL</label>
+        <input id="api-base" type="url" required placeholder="https://minilinks.onrender.com" />
+        <small>Use your Render URL or custom production domain.</small>
+
+        <label for="api-key">API key</label>
+        <input id="api-key" type="password" required autocomplete="off" placeholder="ml_live_..." />
+        <small>Create a reveal-once key under MiniLinks &gt; API keys.</small>
+
+        <div class="actions"><button type="submit">Save connection</button><a href="https://minilinks.onrender.com/app#api-keys" target="_blank" rel="noreferrer">Open API keys</a></div>
+      </form>
+      <p id="message" role="status" aria-live="polite"></p>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>

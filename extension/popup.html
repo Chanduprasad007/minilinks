@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create a MiniLink</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="https://minilinks.onrender.com/app" target="_blank" rel="noreferrer"><span>M</span><strong>MiniLinks</strong></a>
+      <button id="settings" class="icon-button" type="button" aria-label="Open extension settings" title="Settings">&#9881;</button>
+    </header>
+
+    <main>
+      <div class="status-row"><span class="eyebrow">Current page</span><span id="connection" class="status">Checking</span></div>
+      <h1 id="page-title">Loading page...</h1>
+      <p id="page-url" class="page-url"></p>
+
+      <form id="shorten-form">
+        <label for="alias">Custom alias <span>Optional</span></label>
+        <div class="alias-field"><span>/</span><input id="alias" name="alias" maxlength="64" autocomplete="off" placeholder="campaign-name" /></div>
+        <button id="create" class="primary" type="submit">Create MiniLink</button>
+      </form>
+
+      <section id="result" class="result" hidden>
+        <span>Ready to share</span>
+        <strong id="short-url"></strong>
+        <button id="copy" class="copy" type="button">Copy link</button>
+      </section>
+
+      <p id="message" class="message" role="status" aria-live="polite"></p>
+      <a id="setup-link" class="setup-link" href="options.html" target="_blank">Connect your MiniLinks account</a>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -10,7 +10,9 @@ For the complete email login, Google OAuth, API, custom-domain, and Render setup
 npm start
 ```
 
-Open `http://localhost:3000`. Without Supabase environment variables, the app uses local JSON storage and an owner demo account.
+Open `http://localhost:3000` for the public website and `http://localhost:3000/app` for the product. Without Supabase environment variables, the app uses local JSON storage and an owner demo account.
+
+The unpacked Chrome extension is in [`extension/`](extension/README.md). It connects to the same scoped public API used by other integrations.
 
 ## Deploy with GitHub, Supabase, and Render
 

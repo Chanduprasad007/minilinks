@@ -7,6 +7,8 @@ This guide uses the existing Render service at `https://minilinks.onrender.com`.
 Replace the repository files with the current files from this folder. The most important changed files are:
 
 - `server.js`
+- `minilinks/home.html`
+- `minilinks/home.css`
 - `minilinks/index.html`
 - `minilinks/styles.css`
 - `minilinks/script.js`
@@ -102,6 +104,18 @@ The API returns rate-limit headers. Revoked keys return HTTP 401. The machine-re
 8. Redeploy Render.
 
 The Google Authorized redirect URI remains the Supabase `/auth/v1/callback` URL.
+
+The public marketing site is served at `/`; the authenticated product is served at `/app`.
+
+## 8. Test and publish the Chrome extension
+
+1. Follow [`extension/README.md`](extension/README.md) to load the unpacked extension.
+2. Create a dedicated API key with only `links:write` for extension testing.
+3. Confirm the extension can shorten a normal HTTPS page against the deployed Render API.
+4. Add production icons, privacy-policy and support URLs, screenshots, and a store description.
+5. Zip the contents of `extension/` and submit it through the Chrome Web Store developer dashboard.
+
+Revoke the test key after testing. Each customer creates and stores their own key; no shared MiniLinks credential should be bundled into the extension.
 
 ## Before accepting paying customers
 

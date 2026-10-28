@@ -9,7 +9,7 @@ const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || "").trim().replace
 const PUBLIC_DIR = path.join(__dirname, "minilinks");
 const DATA_DIR = path.join(__dirname, "data");
 const DB_PATH = path.join(DATA_DIR, "minilinks-db.json");
-const RESERVED = new Set(["api", "assets", "styles.css", "script.js", "index.html", "health"]);
+const RESERVED = new Set(["api", "app", "pricing", "assets", "styles.css", "script.js", "index.html", "home.html", "health", "openapi.json"]);
 const SUPABASE_URL = String(process.env.SUPABASE_URL || "")
   .trim()
   .replace(/\/$/, "")
@@ -311,10 +311,10 @@ const hashValue = (value) => crypto.createHmac("sha256", API_KEY_SECRET).update(
 const requestIp = (req) => String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
 const bearerToken = (req) => String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
 const appOrigin = (req) => {
-  if (PUBLIC_BASE_URL) return PUBLIC_BASE_URL;
+  if (PUBLIC_BASE_URL) return `${PUBLIC_BASE_URL.replace(/\/app$/, "")}/app`;
   const forwardedProto = String(req.headers["x-forwarded-proto"] || "").split(",")[0];
   const protocol = forwardedProto || (/^(localhost|127\.0\.0\.1)(:|$)/.test(req.headers.host || "") ? "http" : "https");
-  return `${protocol}://${req.headers.host}`;
+  return `${protocol}://${req.headers.host}/app`;
 };
 
 const currentUser = async (req) => {
@@ -720,6 +720,15 @@ const server = http.createServer(async (req, res) => {
     const requestUrl = new URL(req.url, `http://${req.headers.host}`);
     const pathname = decodeURIComponent(requestUrl.pathname);
 
+    if (pathname.startsWith("/v1/")) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-API-Key");
+      res.setHeader("Access-Control-Expose-Headers", "X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset");
+      res.setHeader("Vary", "Origin");
+      if (req.method === "OPTIONS") return send(res, 204, "");
+    }
+
     if (pathname === "/health") return send(res, 200, { ok: true, storage: USE_SUPABASE ? "supabase" : "json", auth: SUPABASE_ANON_KEY ? "supabase" : "demo" });
     if (pathname === "/api/auth/signup" && req.method === "POST") return authAction(req, res, "signup");
     if (pathname === "/api/auth/login" && req.method === "POST") return authAction(req, res, "login");
@@ -773,11 +782,12 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname.startsWith("/api/") || pathname.startsWith("/v1/")) return send(res, 404, { error: "Unknown API route." });
 
+    if (pathname === "/" && (req.method === "GET" || req.method === "HEAD")) return serveStatic(res, "home.html");
+    if (pathname === "/app" && (req.method === "GET" || req.method === "HEAD")) return serveStatic(res, "index.html");
     if ((req.method === "GET" || req.method === "HEAD") && pathname.length > 1 && !path.extname(pathname)) {
       return redirect(req, res, pathname.slice(1));
     }
-
-    serveStatic(res, pathname === "/" ? "index.html" : pathname.slice(1));
+    serveStatic(res, pathname.slice(1));
   } catch (error) {
     send(res, 500, { error: error.message });
   }
